@@ -1,41 +1,27 @@
-import React from "react";
+import React, { useState } from "react";
+import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import Sidebar from "./components/Sidebar";
 import Header from "./components/Header";
-import MetricsCards from "./components/MetricsCards";
-import ConversationMetricsChart from "./components/ConversationMetricsChart";
-import MessagesPerDayChart from "./components/MessagesPerDayChart";
-import LastConversationsTable from "./components/LastConversationsTable";
-import DateFilters from "./components/DateFilters";
-import {
-  metrics,
-  conversationMetrics,
-  messagesPerDay,
-  lastConversations
-} from "./data/mockData";
-import { useState } from "react";
+import Dashboard from "./pages/Dashboard";
+import MessagesPage from "./pages/MessagesPage";
+import FeedbacksPage from "./pages/FeedbacksPage";
+import ReportsPage from "./pages/ReportsPage";
 
 export default function App() {
-  // Estados de filtro de datas
-  const [filters, setFilters] = useState({});
-
-  // Aqui você pode implementar lógica para filtrar dados de acordo com "filters"
-  // No mock não filtramos, mas pode aplicar depois ao conectar com backend
+  const [filters, setFilters] = useState({ start: "2025-06-01", end: "2025-06-25"});
 
   return (
-    <div>
+    <Router>
       <Sidebar />
       <div className="md:ml-56 ml-20 pt-20 px-4 md:px-8 pb-8 bg-gray-100 min-h-screen">
         <Header />
-        <main className="pt-8">
-          <DateFilters onApply={setFilters} />
-          <MetricsCards metrics={metrics} />
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-            <ConversationMetricsChart data={conversationMetrics} />
-            <MessagesPerDayChart data={messagesPerDay} />
-          </div>
-          <LastConversationsTable conversations={lastConversations} />
-        </main>
+        <Routes>
+          <Route path="/" element={<Dashboard filters={filters} />} />
+          <Route path="/mensagens" element={<MessagesPage filters={filters} />} />
+          <Route path="/feedbacks" element={<FeedbacksPage filters={filters} />} />
+          <Route path="/relatorios" element={<ReportsPage filters={filters} />} />
+        </Routes>
       </div>
-    </div>
+    </Router>
   );
 }
