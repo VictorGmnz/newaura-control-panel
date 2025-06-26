@@ -11,7 +11,6 @@ export default function LastConversationsTable({ conversations }) {
             <th className="py-2 px-3 text-left">Data</th>
             <th className="py-2 px-3 text-left">Última mensagem</th>
             <th className="py-2 px-3 text-left">Status</th>
-            <th className="py-2 px-3 text-left">Avaliação</th>
           </tr>
         </thead>
         <tbody>
@@ -30,9 +29,6 @@ export default function LastConversationsTable({ conversations }) {
                 >
                   {c.status}
                 </span>
-              </td>
-              <td className="py-2 px-3">
-                <span className="bg-primary text-white px-2 py-1 rounded-full">{c.rating}</span>
               </td>
             </tr>
           ))}

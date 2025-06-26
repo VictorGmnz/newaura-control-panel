@@ -1,50 +1,54 @@
-import React, { useState, useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import MetricsCards from "../components/MetricsCards";
+import ConversationMetricsChart from "../components/ConversationMetricsChart";
+import MessagesPerDayChart from "../components/MessagesPerDayChart";
+import LastConversationsTable from "../components/LastConversationsTable";
 
-export default function Dashboard() {
-  const [metrics, setMetrics] = useState({
-    activeConversations: 0,
-    newContacts: 0,
-    avgResponseTime: 0,
-    feedbackRating: 0
-  });
+export default function Dashboard({ filters }) {
+  const [metrics, setMetrics] = useState({});
+  const [convMetrics, setConvMetrics] = useState([]);
+  const [messagesPerDay, setMessagesPerDay] = useState([]);
+  const [lastConversations, setLastConversations] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
   useEffect(() => {
     setLoading(true);
-    fetch("http://localhost:8000/admin/summary")
-      .then(res => {
-        if (!res.ok) throw new Error("Erro ao buscar dados da API");
-        return res.json();
-      })
-      .then(data => {
+    Promise.all([
+      fetch("http://localhost:8000/admin/summary").then(res => res.json()),
+      fetch(`http://localhost:8000/admin/messages/metrics?start_date=${filters.start}&end_date=${filters.end}`).then(res => res.json()),
+      fetch(`http://localhost:8000/admin/messages/per_day?start_date=${filters.start}&end_date=${filters.end}`).then(res => res.json()),
+      fetch(`http://localhost:8000/admin/last_conversations?start_date=${filters.start}&end_date=${filters.end}`).then(res => res.json())
+    ])
+      .then(([summary, metricsData, perDayData, lastConvData]) => {
         setMetrics({
-          activeConversations: data.total_messages,
-          newContacts: data.total_customers,
-          avgResponseTime: data.avg_response_time ?? 0,
-          feedbackRating: data.positive_feedback_percent
+          totalConversations: summary.total_messages,
+          totalCustomer: summary.total_customers,
+          totalFeedbacks: summary.total_feedbacks ?? 0,
+          feedbackRating: summary.positive_feedback_percent
         });
+        setConvMetrics(metricsData);
+        setMessagesPerDay(perDayData);
+        setLastConversations(lastConvData);
         setError("");
       })
       .catch(err => {
-        setError("Não foi possível carregar as informações do servidor. Por favor contate o Suporte Técnico - Error 304.");
+        setError("Erro ao carregar informações da dashboard.");
       })
       .finally(() => setLoading(false));
-  }, []);
+  }, [filters]);
 
-  if (loading) {
-    return <div className="p-6">Carregando informações...</div>;
-  }
-
-  if (error) {
-    return <div className="p-6 text-red-500">{error}</div>;
-  }
+  if (loading) return <div className="p-6">Carregando...</div>;
+  if (error) return <div className="p-6 text-red-500">{error}</div>;
 
   return (
     <div>
       <MetricsCards metrics={metrics} />
-      {/* outros componentes */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+        <ConversationMetricsChart data={convMetrics} />
+        <MessagesPerDayChart data={messagesPerDay} />
+      </div>
+      <LastConversationsTable conversations={lastConversations} />
     </div>
   );
 }

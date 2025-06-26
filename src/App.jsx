@@ -8,7 +8,7 @@ import FeedbacksPage from "./pages/FeedbacksPage";
 import ReportsPage from "./pages/ReportsPage";
 
 export default function App() {
-  const [filters, setFilters] = useState({ start: "2025-06-01", end: "2025-06-25"});
+  const [filters, setFilters] = useState({ start: "2025-06-01", end: "2025-06-30"});
 
   return (
     <Router>

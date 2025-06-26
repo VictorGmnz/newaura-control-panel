@@ -3,22 +3,22 @@ import React from "react";
 export default function MetricsCards({ metrics }) {
   const cards = [
     {
-      label: "Conversas Ativas",
-      value: metrics.activeConversations,
+      label: "Mensagens Totais",
+      value: metrics.totalConversations,
       color: "bg-primary text-white"
     },
     {
-      label: "Novos Contatos",
-      value: metrics.newContacts,
+      label: "Clientes totais",
+      value: metrics.totalCustomer,
       color: "bg-white text-primary border border-primary"
     },
     {
-      label: "Tempo Médio Resposta (min)",
-      value: metrics.avgResponseTime,
+      label: "Feedback Recebidos",
+      value: metrics.totalFeedbacks,
       color: "bg-white text-primary border border-primary"
     },
     {
-      label: "Avaliação Feedback (%)",
+      label: "Avaliação Feedback Positivo (%)",
       value: metrics.feedbackRating,
       color: "bg-white text-primary border border-primary"
     }
