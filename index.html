@@ -2,12 +2,29 @@
 <html lang="pt-br">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/jpg" href="/logo.jpg" />
+    <link rel="icon" type="image/jpg" href="/favicon.png" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>NewAura v0.3</title>
+    <title>NewAura AI</title>
+    <style>
+      .version-label {
+        position: fixed;
+        right: 12px;
+        bottom: 12px;
+        background: rgba(0,0,0,0.4);
+        color: #fff;
+        font-size: 14px;
+        padding: 3px 10px;
+        border-radius: 8px;
+        z-index: 9999;
+        font-family: monospace;
+        pointer-events: none;
+        user-select: none;
+      }
+    </style>
   </head>
   <body class="bg-gray-100">
     <div id="root"></div>
+    <div class="version-label">v1.0</div>
     <script type="module" src="/src/main.jsx"></script>
   </body>
 </html>
