@@ -1,18 +1,17 @@
 import React, { useEffect, useState } from "react";
 import DateFilters from "../components/DateFilters";
+import { getDefaultFilters } from "../utils/dateUtils";
+import { authFetch } from "../utils/authFetch";
 
-export default function MessagesPage() {
-  const [filters, setFilters] = useState({
-    start: "2025-06-01",
-    end: "2025-06-25"
-  });
+export default function MessagesPage({ filters: filtersProp }) {
+  const [filters, setFilters] = useState(() => filtersProp && filtersProp.start && filtersProp.end ? filtersProp : getDefaultFilters());
   const [messages, setMessages] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
   useEffect(() => {
       if (filters.start && filters.end) {
-        fetch(`http://localhost:8000/admin/messages?start_date=${filters.start}&end_date=${filters.end}`)
+        authFetch(`http://localhost:8000/admin/messages?start_date=${filters.start}&end_date=${filters.end}`)
           .then(res => {
             if (!res.ok) throw new Error("Erro ao buscar mensagens");
             return res.json();

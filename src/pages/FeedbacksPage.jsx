@@ -1,11 +1,14 @@
 import React, { useEffect, useState } from "react";
+import { getDefaultFilters } from "../utils/dateUtils";
+import { authFetch } from "../utils/authFetch";
 
-export default function FeedbacksPage({ filters }) {
+export default function FeedbacksPage({ filters: filtersProp }) {
+  const [filters, setFilters] = useState(() => filtersProp && filtersProp.start && filtersProp.end ? filtersProp : getDefaultFilters());
   const [feedbacks, setFeedbacks] = useState([]);
 
   useEffect(() => {
     if (filters.start && filters.end) {
-      fetch(`http://localhost:8000/admin/feedbacks?start_date=${filters.start}&end_date=${filters.end}`)
+      authFetch(`http://localhost:8000/admin/feedbacks?start_date=${filters.start}&end_date=${filters.end}`)
         .then(res => res.json())
         .then(data => setFeedbacks(data.feedbacks || []));
     }
@@ -14,7 +17,7 @@ export default function FeedbacksPage({ filters }) {
   return (
     <div className="p-6">
       <h2 className="text-2xl font-bold mb-4">Feedbacks</h2>
-      <table className="w-full bg-white rounded-xl shadow text-sm">
+      <table className="text-center w-full bg-white rounded-xl shadow text-sm">
         <thead>
           <tr>
             <th>Telefone</th>

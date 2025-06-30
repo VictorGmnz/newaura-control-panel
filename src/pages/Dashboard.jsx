@@ -3,8 +3,11 @@ import MetricsCards from "../components/MetricsCards";
 import ConversationMetricsChart from "../components/ConversationMetricsChart";
 import MessagesPerDayChart from "../components/MessagesPerDayChart";
 import LastConversationsTable from "../components/LastConversationsTable";
+import { getDefaultFilters } from "../utils/dateUtils";
+import { authFetch } from "../utils/authFetch";
 
-export default function Dashboard({ filters }) {
+export default function Dashboard({ filters: filtersProp }) {
+  const [filters, setFilters] = useState(() => filtersProp && filtersProp.start && filtersProp.end ? filtersProp : getDefaultFilters());
   const [metrics, setMetrics] = useState({});
   const [convMetrics, setConvMetrics] = useState([]);
   const [messagesPerDay, setMessagesPerDay] = useState([]);
@@ -13,12 +16,15 @@ export default function Dashboard({ filters }) {
   const [error, setError] = useState("");
 
   useEffect(() => {
+    if (!filters.start || !filters.end) {
+      setFilters(getDefaultFilters());
+    }
     setLoading(true);
     Promise.all([
-      fetch("http://localhost:8000/admin/summary").then(res => res.json()),
-      fetch(`http://localhost:8000/admin/messages/metrics?start_date=${filters.start}&end_date=${filters.end}`).then(res => res.json()),
-      fetch(`http://localhost:8000/admin/messages/per_day?start_date=${filters.start}&end_date=${filters.end}`).then(res => res.json()),
-      fetch(`http://localhost:8000/admin/last_conversations?start_date=${filters.start}&end_date=${filters.end}`).then(res => res.json())
+      authFetch("http://localhost:8000/admin/summary").then(res => res.json()),
+      authFetch(`http://localhost:8000/admin/messages/metrics?start_date=${filters.start}&end_date=${filters.end}`).then(res => res.json()),
+      authFetch(`http://localhost:8000/admin/messages/per_day?start_date=${filters.start}&end_date=${filters.end}`).then(res => res.json()),
+      authFetch(`http://localhost:8000/admin/last_conversations?start_date=${filters.start}&end_date=${filters.end}`).then(res => res.json())
     ])
       .then(([summary, metricsData, perDayData, lastConvData]) => {
         setMetrics({
