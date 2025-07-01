@@ -2,10 +2,7 @@
 
 Painel de Controle React para clientes da New Aura AI.
 
-## Como rodar localmente
+## Hospedado via vercel
 
 ```bash
-git clone [seu repositório]
-cd new-aura-dashboard
-npm install
-npm run dev
+https://vercel.com/victor-gimenezs-projects/newaura-control-panel
