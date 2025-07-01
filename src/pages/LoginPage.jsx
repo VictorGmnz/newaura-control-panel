@@ -1,6 +1,8 @@
 import React, { useState } from "react";
 import { authFetch } from "../utils/authFetch";
 
+const API_URL = import.meta.env.VITE_API_URL;
+
 export default function LoginPage({ onLogin }) {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
@@ -12,7 +14,7 @@ export default function LoginPage({ onLogin }) {
     setError("");
     setLoading(true);
 
-    authFetch("http://localhost:8000/admin/login", {
+    authFetch(`${API_URL}/admin/login`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ username, password })

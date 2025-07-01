@@ -3,6 +3,8 @@ import DateFilters from "../components/DateFilters";
 import { getDefaultFilters } from "../utils/dateUtils";
 import { authFetch } from "../utils/authFetch";
 
+const API_URL = import.meta.env.VITE_API_URL;
+
 export default function MessagesPage({ filters: filtersProp }) {
   const [filters, setFilters] = useState(() => filtersProp && filtersProp.start && filtersProp.end ? filtersProp : getDefaultFilters());
   const [messages, setMessages] = useState([]);
@@ -11,7 +13,7 @@ export default function MessagesPage({ filters: filtersProp }) {
 
   useEffect(() => {
       if (filters.start && filters.end) {
-        authFetch(`http://localhost:8000/admin/messages?start_date=${filters.start}&end_date=${filters.end}`)
+        authFetch(`${API_URL}/admin/messages?start_date=${filters.start}&end_date=${filters.end}`)
           .then(res => {
             if (!res.ok) throw new Error("Erro ao buscar mensagens");
             return res.json();
