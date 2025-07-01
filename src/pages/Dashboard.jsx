@@ -6,6 +6,8 @@ import LastConversationsTable from "../components/LastConversationsTable";
 import { getDefaultFilters } from "../utils/dateUtils";
 import { authFetch } from "../utils/authFetch";
 
+const API_URL = import.meta.env.VITE_API_URL;
+
 export default function Dashboard({ filters: filtersProp }) {
   const [filters, setFilters] = useState(() => filtersProp && filtersProp.start && filtersProp.end ? filtersProp : getDefaultFilters());
   const [metrics, setMetrics] = useState({});
@@ -21,10 +23,10 @@ export default function Dashboard({ filters: filtersProp }) {
     }
     setLoading(true);
     Promise.all([
-      authFetch("http://localhost:8000/admin/summary").then(res => res.json()),
-      authFetch(`http://localhost:8000/admin/messages/metrics?start_date=${filters.start}&end_date=${filters.end}`).then(res => res.json()),
-      authFetch(`http://localhost:8000/admin/messages/per_day?start_date=${filters.start}&end_date=${filters.end}`).then(res => res.json()),
-      authFetch(`http://localhost:8000/admin/last_conversations?start_date=${filters.start}&end_date=${filters.end}`).then(res => res.json())
+      authFetch(`${API_URL}/admin/summary`).then(res => res.json()),
+      authFetch(`${API_URL}/admin/messages/metrics?start_date=${filters.start}&end_date=${filters.end}`).then(res => res.json()),
+      authFetch(`${API_URL}/admin/messages/per_day?start_date=${filters.start}&end_date=${filters.end}`).then(res => res.json()),
+      authFetch(`${API_URL}/admin/last_conversations?start_date=${filters.start}&end_date=${filters.end}`).then(res => res.json())
     ])
       .then(([summary, metricsData, perDayData, lastConvData]) => {
         setMetrics({

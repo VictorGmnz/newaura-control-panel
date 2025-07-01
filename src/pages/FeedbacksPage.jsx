@@ -2,13 +2,15 @@ import React, { useEffect, useState } from "react";
 import { getDefaultFilters } from "../utils/dateUtils";
 import { authFetch } from "../utils/authFetch";
 
+const API_URL = import.meta.env.VITE_API_URL;
+
 export default function FeedbacksPage({ filters: filtersProp }) {
   const [filters, setFilters] = useState(() => filtersProp && filtersProp.start && filtersProp.end ? filtersProp : getDefaultFilters());
   const [feedbacks, setFeedbacks] = useState([]);
 
   useEffect(() => {
     if (filters.start && filters.end) {
-      authFetch(`http://localhost:8000/admin/feedbacks?start_date=${filters.start}&end_date=${filters.end}`)
+      authFetch(`${API_URL}/admin/feedbacks?start_date=${filters.start}&end_date=${filters.end}`)
         .then(res => res.json())
         .then(data => setFeedbacks(data.feedbacks || []));
     }

@@ -1,6 +1,8 @@
 import React, { useState } from "react";
 import DateFilters from "../components/DateFilters";
 
+const API_URL = import.meta.env.VITE_API_URL;
+
 export default function ReportsPage() {
   const [filters, setFilters] = useState({ start: "", end: "" });
 
@@ -9,7 +11,7 @@ export default function ReportsPage() {
       alert("Selecione as datas!");
       return;
     }
-    const url = `http://localhost:8000/admin/export/messages?start_date=${filters.start}&end_date=${filters.end}`;
+    const url = `${API_URL}/admin/export/messages?start_date=${filters.start}&end_date=${filters.end}`;
     window.open(url, "_blank");
   }
 
