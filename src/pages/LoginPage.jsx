@@ -41,7 +41,11 @@ export default function LoginPage({ onLogin }) {
         onLogin();
       })
       .catch(err => {
-        setError("Ocorreu um problema de conexão.\nPor favor, tente novamente mais tarde.");
+        setError(
+          err && err.message
+            ? err.message
+            : "Ocorreu um problema de conexão.\nPor favor, tente novamente mais tarde."
+        );
       })
       .finally(() => setLoading(false));
   }
