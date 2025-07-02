@@ -31,7 +31,7 @@ export default function LoginPage({ onLogin }) {
           if (res.status === 401)
             throw new Error(backendMsg || "Usuário ou senha inválidos.");
           if (res.status === 403)
-            throw new Error(backendMsg || "Usuário inativo. Peça para o administrador liberar seu acesso.");
+            throw new Error(backendMsg || "Usuário inativo. Peça para o administrador liberar seu acesso!");
           throw new Error(backendMsg || "Erro inesperado. Tente novamente.");
         }
         return res.json();
