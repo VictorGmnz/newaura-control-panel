@@ -20,7 +20,7 @@ export default function ReportsPage() {
       setFiltersApplied(true); // só mostra botões depois do aplicar
       setTimeout(() => setMessage(""), 2000);
     } else {
-      setMessage("Por favor selecione as duas datas.");
+      setMessage("Por favor selecione as duas datas!");
       setFiltersApplied(false);
       setTimeout(() => setMessage(""), 2000);
     }
