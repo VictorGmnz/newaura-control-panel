@@ -14,11 +14,7 @@ export default function Sidebar() {
   const location = useLocation();
 
   return (
-    <aside className="bg-white shadow h-screen w-20 md:w-56 flex flex-col fixed left-0 top-0 z-10">
-      <div className="flex items-center justify-center md:justify-start py-6 px-3">
-        <img src="/logo.jpg" alt="Logo" className="h-10 mr-0 md:mr-2" />
-        <span className="hidden md:inline text-xl font-semibold text-primary">New Aura</span>
-      </div>
+    <aside className="bg-white shadow w-20 md:w-56 flex flex-col fixed left-0 h-[calc(100vh-56px)]">
       <nav className="flex-1 flex flex-col gap-2 mt-4">
         {navItems.map((item) => (
           <Link
