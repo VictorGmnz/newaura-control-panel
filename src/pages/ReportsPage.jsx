@@ -18,11 +18,11 @@ export default function ReportsPage() {
       setFilters(newFilters);
       setMessage("Filtros aplicados!");
       setFiltersApplied(true); // só mostra botões depois do aplicar
-      setTimeout(() => setMessage(""), 2000);
+      setTimeout(() => setMessage(""), 3000);
     } else {
       setMessage("Por favor selecione as duas datas!");
       setFiltersApplied(false);
-      setTimeout(() => setMessage(""), 2000);
+      setTimeout(() => setMessage(""), 3000);
     }
   }
 
