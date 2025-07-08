@@ -7,6 +7,7 @@ import MessagesPage from "./pages/MessagesPage";
 import FeedbacksPage from "./pages/FeedbacksPage";
 import ReportsPage from "./pages/ReportsPage";
 import LoginPage from "./pages/LoginPage";
+import ConfigPage from "./pages/ConfigPage";
 
 function ProtectedRoute({ isLogged, children }) {
   return isLogged ? children : <Navigate to="/login" replace />;
@@ -73,7 +74,7 @@ export default function App() {
             <ProtectedRoute isLogged={isLogged}>
               <>
                 <Header />
-                <div className="md:ml-56 ml-20 pt-0 px-4 md:px-8 pb-8 bg-gray-100 min-h-screen">
+                <div className="md:ml-56 ml-20 pt-20 px-4 md:px-8 pb-8 bg-gray-100 min-h-screen">
                   <Sidebar />
                   <main className="flex-1 bg-gray-100 min-h-screen pt-4 px-4 md:px-8 pb-8">
                     <Routes>
@@ -81,6 +82,7 @@ export default function App() {
                       <Route path="/mensagens" element={<MessagesPage />} />
                       <Route path="/feedbacks" element={<FeedbacksPage />} />
                       <Route path="/relatorios" element={<ReportsPage />} />
+                      <Route path="/configuracoes" element={<ConfigPage />} />
                       <Route path="*" element={<Navigate to="/" />} />
                     </Routes>
                   </main>

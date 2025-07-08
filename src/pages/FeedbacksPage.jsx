@@ -14,6 +14,15 @@ export default function FeedbacksPage({ filters: filtersProp }) {
   const [feedbacks, setFeedbacks] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [message, setMessage] = useState("");
+  const [filtersAppliedManually, setFiltersAppliedManually] = useState(false);
+
+  function handleApplyFilters(newFilters) {
+    setFilters(newFilters);
+    setFiltersAppliedManually(true);
+    setMessage("Filtros aplicados!");
+    setTimeout(() => setMessage(""), 2000); // Some depois de 2 segundos
+  }
 
   useEffect(() => {
     if (filters.start && filters.end) {
@@ -37,8 +46,13 @@ export default function FeedbacksPage({ filters: filtersProp }) {
         initialStart={filters.start}
         initialEnd={filters.end}
         initialPhone={filters.phone}
-        onApply={setFilters}
+        onApply={handleApplyFilters}
       />
+      {filtersAppliedManually && !!message && (
+        <div className="mb-4 p-2 bg-green-100 text-green-700 rounded shadow text-center font-semibold w-[422px]">
+          {message}
+        </div>
+      )}
       {loading ? (
         <div>Carregando mensagens...</div>
       ) : (
