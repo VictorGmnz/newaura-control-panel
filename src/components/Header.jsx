@@ -1,6 +1,7 @@
 import React from "react";
 import { FaBell } from "react-icons/fa";
 import { useNavigate } from "react-router-dom";
+import { useAuth } from '../utils/authData';
 
 export default function Header() {
   const navigate = useNavigate();

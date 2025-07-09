@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useEffect, useRef } from "react";
 import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
 import Sidebar from "./components/Sidebar";
 import Header from "./components/Header";
@@ -8,6 +8,9 @@ import FeedbacksPage from "./pages/FeedbacksPage";
 import ReportsPage from "./pages/ReportsPage";
 import LoginPage from "./pages/LoginPage";
 import ConfigPage from "./pages/ConfigPage";
+import { useAuth } from "./utils/authData";
+
+const INACTIVITY_TIMEOUT = 30 * 60 * 1000; // 30 minutos em ms
 
 function ProtectedRoute({ isLogged, children }) {
   return isLogged ? children : <Navigate to="/login" replace />;
@@ -16,25 +19,25 @@ function RedirectRoute({ isLogged, children }) {
   return isLogged ? <Navigate to="/" replace /> : children;
 }
 
-const INACTIVITY_TIMEOUT = 30 * 60 * 1000; // 30 minutes in ms
-
 export default function App() {
-  const [isLogged, setIsLogged] = useState(false);
-  const [loading, setLoading] = useState(true);
+  const { token, logout } = useAuth();
   const timer = useRef(null);
 
-  function handleLogout(message) {
-    localStorage.removeItem("token");
-    setIsLogged(false);
-    if (message) alert(message);
-  }
+  useEffect(() => {
+    if (localStorage.getItem("token")) {
+      localStorage.removeItem("token");
+      localStorage.removeItem("user");
+    }
+  }, []);
 
   useEffect(() => {
-    if (!isLogged) return;
+    if (!token) return;
     function resetTimer() {
       clearTimeout(timer.current);
       timer.current = setTimeout(() => {
-        handleLogout("Desconectado por inatividade.");
+        logout();
+        alert("Desconectado por inatividade.");
+        window.location.href = "/login";
       }, INACTIVITY_TIMEOUT);
     }
     window.addEventListener("mousemove", resetTimer);
@@ -47,15 +50,7 @@ export default function App() {
       window.removeEventListener("keydown", resetTimer);
       window.removeEventListener("click", resetTimer);
     };
-  }, [isLogged]);
-
-  useEffect(() => {
-    setIsLogged(false);
-    localStorage.removeItem("token");
-    setLoading(false);
-  }, []);
-
-  if (loading) return <div>Carregando...</div>;
+  }, [token, logout]);
 
   return (
     <Router>
@@ -63,15 +58,15 @@ export default function App() {
         <Route
           path="/login"
           element={
-            <RedirectRoute isLogged={isLogged}>
-              <LoginPage onLogin={() => setIsLogged(true)} />
+            <RedirectRoute isLogged={!!token}>
+              <LoginPage />
             </RedirectRoute>
           }
         />
         <Route
           path="/*"
           element={
-            <ProtectedRoute isLogged={isLogged}>
+            <ProtectedRoute isLogged={!!token}>
               <>
                 <Header />
                 <div className="md:ml-56 ml-20 pt-20 px-4 md:px-8 pb-8 bg-gray-100 min-h-screen">

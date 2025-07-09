@@ -1,12 +1,12 @@
 import React, { useEffect, useState } from "react";
+import { BrowserRouter as Navigate } from "react-router-dom";
 import MetricsCards from "../components/MetricsCards";
 import ConversationMetricsChart from "../components/ConversationMetricsChart";
 import MessagesPerDayChart from "../components/MessagesPerDayChart";
 import LastConversationsTable from "../components/LastConversationsTable";
 import { getDefaultFilters } from "../utils/dateUtils";
 import { authFetch } from "../utils/authFetch";
-
-const API_URL = import.meta.env.VITE_API_URL;
+import { useAuth } from '../utils/authData';
 
 export default function Dashboard({ filters: filtersProp }) {
   const [filters, setFilters] = useState(() => filtersProp && filtersProp.start && filtersProp.end ? filtersProp : getDefaultFilters());
@@ -16,6 +16,10 @@ export default function Dashboard({ filters: filtersProp }) {
   const [lastConversations, setLastConversations] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const API_URL = import.meta.env.VITE_API_URL;
+  const { user } = useAuth();
+  if (!user) return <Navigate to="/login" replace />;
+  const COMPANY_ID = user? user.company_id: 0;
 
   useEffect(() => {
     if (!filters.start || !filters.end) {
@@ -23,10 +27,10 @@ export default function Dashboard({ filters: filtersProp }) {
     }
     setLoading(true);
     Promise.all([
-      authFetch(`${API_URL}/admin/summary`).then(res => res.json()),
-      authFetch(`${API_URL}/admin/messages/metrics?start_date=${filters.start}&end_date=${filters.end}`).then(res => res.json()),
-      authFetch(`${API_URL}/admin/messages/per_day?start_date=${filters.start}&end_date=${filters.end}`).then(res => res.json()),
-      authFetch(`${API_URL}/admin/last_conversations?start_date=${filters.start}&end_date=${filters.end}`).then(res => res.json())
+      authFetch(`${API_URL}/admin/summary?company_id=${COMPANY_ID}`).then(res => res.json()),
+      authFetch(`${API_URL}/admin/messages/metrics?start_date=${filters.start}&end_date=${filters.end}&company_id=${COMPANY_ID}`).then(res => res.json()),
+      authFetch(`${API_URL}/admin/messages/per_day?start_date=${filters.start}&end_date=${filters.end}&company_id=${COMPANY_ID}`).then(res => res.json()),
+      authFetch(`${API_URL}/admin/last_conversations?start_date=${filters.start}&end_date=${filters.end}&company_id=${COMPANY_ID}`).then(res => res.json())
     ])
       .then(([summary, metricsData, perDayData, lastConvData]) => {
         setMetrics({

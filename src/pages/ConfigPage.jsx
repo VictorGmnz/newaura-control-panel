@@ -1,9 +1,8 @@
 import React, { useEffect, useState } from "react";
 import { authFetch } from "../utils/authFetch";
 import UploadDocuments from "../components/UploadDocuments";
-
-const API_URL = import.meta.env.VITE_API_URL;
-const COMPANY_ID = 1;
+import { useAuth } from '../utils/authData';
+import { BrowserRouter as Navigate } from "react-router-dom";
 
 export default function ConfigPage() {
   const [profile, setProfile] = useState(null);
@@ -11,6 +10,10 @@ export default function ConfigPage() {
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
+  const API_URL = import.meta.env.VITE_API_URL;
+  const { user } = useAuth();
+  if (!user) return <Navigate to="/login" replace />;
+  const COMPANY_ID = user? user.company_id: 0;
 
   useEffect(() => {
     setLoading(true);

@@ -1,17 +1,21 @@
 import React, { useState } from "react";
 import DateFilters from "../components/DateFilters";
 import { authFetch } from "../utils/authFetch";
+import { useAuth } from '../utils/authData';
 import ExcelJS from "exceljs";
 import jsPDF from "jspdf";
 import autoTable from 'jspdf-autotable';
-
-const API_URL = import.meta.env.VITE_API_URL;
+import { BrowserRouter as Navigate } from "react-router-dom";
 
 export default function ReportsPage() {
   const [filters, setFilters] = useState({ start: "", end: "" });
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
   const [filtersApplied, setFiltersApplied] = useState(false);
+  const API_URL = import.meta.env.VITE_API_URL;
+  const { user } = useAuth();
+  if (!user) return <Navigate to="/login" replace />;
+  const COMPANY_ID = user? user.company_id: 0;
 
   function handleApplyFilters(newFilters) {
     if (newFilters.start && newFilters.end) {
@@ -42,7 +46,7 @@ export default function ReportsPage() {
     }
     setLoading(true);
     try {
-      let url = `${API_URL}/admin/messages?start_date=${filters.start}&end_date=${filters.end}`
+      let url = `${API_URL}/admin/messages?start_date=${filters.start}&end_date=${filters.end}&company_id=${COMPANY_ID}`
       if (filters.phone) url += `&phone=55${encodeURIComponent(filters.phone)}`;
       const res = await authFetch(url);
       const data = await res.json();

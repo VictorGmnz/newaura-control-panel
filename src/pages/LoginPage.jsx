@@ -1,13 +1,14 @@
 import React, { useState } from "react";
 import { authFetch } from "../utils/authFetch";
+import { useAuth } from "../utils/authData";
 
-const API_URL = import.meta.env.VITE_API_URL;
-
-export default function LoginPage({ onLogin }) {
+export default function LoginPage() {
+  const { login } = useAuth();
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const API_URL = import.meta.env.VITE_API_URL;
 
   function handleSubmit(e) {
     e.preventDefault();
@@ -37,8 +38,8 @@ export default function LoginPage({ onLogin }) {
         return res.json();
       })
       .then(data => {
-        localStorage.setItem("token", data.token);
-        onLogin();
+        login(data.token, data.user);
+        window.location.href = "/";
       })
       .catch(err => {
         setError(

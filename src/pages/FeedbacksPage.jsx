@@ -2,8 +2,8 @@ import React, { useEffect, useState } from "react";
 import DateFilters from "../components/DateFilters";
 import { getDefaultFilters } from "../utils/dateUtils";
 import { authFetch } from "../utils/authFetch";
-
-const API_URL = import.meta.env.VITE_API_URL;
+import { useAuth } from '../utils/authData';
+import { BrowserRouter as Navigate } from "react-router-dom";
 
 export default function FeedbacksPage({ filters: filtersProp }) {
     const [filters, setFilters] = useState(() =>
@@ -16,6 +16,10 @@ export default function FeedbacksPage({ filters: filtersProp }) {
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
   const [filtersAppliedManually, setFiltersAppliedManually] = useState(false);
+  const API_URL = import.meta.env.VITE_API_URL;
+  const { user } = useAuth();
+  if (!user) return <Navigate to="/login" replace />;
+  const COMPANY_ID = user? user.company_id: 0;
 
   function handleApplyFilters(newFilters) {
     setFilters(newFilters);
@@ -26,7 +30,7 @@ export default function FeedbacksPage({ filters: filtersProp }) {
 
   useEffect(() => {
     if (filters.start && filters.end) {
-      let url = `${API_URL}/admin/feedbacks?start_date=${filters.start}&end_date=${filters.end}`;
+      let url = `${API_URL}/admin/feedbacks?start_date=${filters.start}&end_date=${filters.end}&company_id=${COMPANY_ID}`;
       if (filters.phone) url += `&phone=55${encodeURIComponent(filters.phone)}`;
       authFetch(url)
         .then(res => {
