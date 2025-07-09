@@ -1,5 +1,5 @@
 import React, { useEffect, useRef } from "react";
-import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
+import { Routes, Route, Navigate } from "react-router-dom";
 import Sidebar from "./components/Sidebar";
 import Header from "./components/Header";
 import Dashboard from "./pages/Dashboard";
@@ -53,40 +53,38 @@ export default function App() {
   }, [token, logout]);
 
   return (
-    <Router>
-      <Routes>
-        <Route
-          path="/login"
-          element={
-            <RedirectRoute isLogged={!!token}>
-              <LoginPage />
-            </RedirectRoute>
-          }
-        />
-        <Route
-          path="/*"
-          element={
-            <ProtectedRoute isLogged={!!token}>
-              <>
-                <Header />
-                <div className="md:ml-56 ml-20 pt-20 px-4 md:px-8 pb-8 bg-gray-100 min-h-screen">
-                  <Sidebar />
-                  <main className="flex-1 bg-gray-100 min-h-screen pt-4 px-4 md:px-8 pb-8">
-                    <Routes>
-                      <Route path="/" element={<Dashboard />} />
-                      <Route path="/mensagens" element={<MessagesPage />} />
-                      <Route path="/feedbacks" element={<FeedbacksPage />} />
-                      <Route path="/relatorios" element={<ReportsPage />} />
-                      <Route path="/configuracoes" element={<ConfigPage />} />
-                      <Route path="*" element={<Navigate to="/" />} />
-                    </Routes>
-                  </main>
-                </div>
-              </>
-            </ProtectedRoute>
-          }
-        />
-      </Routes>
-    </Router>
+    <Routes>
+      <Route
+        path="/login"
+        element={
+          <RedirectRoute isLogged={!!token}>
+            <LoginPage />
+          </RedirectRoute>
+        }
+      />
+      <Route
+        path="/*"
+        element={
+          <ProtectedRoute isLogged={!!token}>
+            <>
+              <Header />
+              <div className="md:ml-56 ml-20 pt-20 px-4 md:px-8 pb-8 bg-gray-100 min-h-screen">
+                <Sidebar />
+                <main className="flex-1 bg-gray-100 min-h-screen pt-4 px-4 md:px-8 pb-8">
+                  <Routes>
+                    <Route path="/" element={<Dashboard />} />
+                    <Route path="/mensagens" element={<MessagesPage />} />
+                    <Route path="/feedbacks" element={<FeedbacksPage />} />
+                    <Route path="/relatorios" element={<ReportsPage />} />
+                    <Route path="/configuracoes" element={<ConfigPage />} />
+                    <Route path="*" element={<Navigate to="/" />} />
+                  </Routes>
+                </main>
+              </div>
+            </>
+          </ProtectedRoute>
+        }
+      />
+    </Routes>
   );
 }
