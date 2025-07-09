@@ -3,7 +3,7 @@ import DateFilters from "../components/DateFilters";
 import { getDefaultFilters } from "../utils/dateUtils";
 import { authFetch } from "../utils/authFetch";
 import { useAuth } from '../utils/authData';
-import { BrowserRouter as Navigate } from "react-router-dom";
+import { Navigate } from "react-router-dom";
 
 export default function MessagesPage({ filters: filtersProp }) {
   const [filters, setFilters] = useState(() =>

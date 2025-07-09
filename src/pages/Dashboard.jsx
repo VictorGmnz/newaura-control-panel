@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { BrowserRouter as Navigate } from "react-router-dom";
+import { Navigate } from "react-router-dom";
 import MetricsCards from "../components/MetricsCards";
 import ConversationMetricsChart from "../components/ConversationMetricsChart";
 import MessagesPerDayChart from "../components/MessagesPerDayChart";

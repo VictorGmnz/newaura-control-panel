@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import { authFetch } from "../utils/authFetch";
 import UploadDocuments from "../components/UploadDocuments";
 import { useAuth } from '../utils/authData';
-import { BrowserRouter as Navigate } from "react-router-dom";
+import { Navigate } from "react-router-dom";
 
 export default function ConfigPage() {
   const [profile, setProfile] = useState(null);

@@ -5,7 +5,7 @@ import { useAuth } from '../utils/authData';
 import ExcelJS from "exceljs";
 import jsPDF from "jspdf";
 import autoTable from 'jspdf-autotable';
-import { BrowserRouter as Navigate } from "react-router-dom";
+import { Navigate } from "react-router-dom";
 
 export default function ReportsPage() {
   const [filters, setFilters] = useState({ start: "", end: "" });
