@@ -1,28 +1,25 @@
 import React, { useEffect, useState } from "react";
 import { authFetch } from "../utils/authFetch";
-import UploadDocuments from "../components/UploadDocuments";
-import { useAuth } from '../utils/authData';
-import { Navigate } from "react-router-dom";
+import { useAuth } from "../utils/authData";
 
-export default function ConfigPage() {
+const API_URL = import.meta.env.VITE_API_URL;
+
+export default function ConfigCompanyPage() {
+  const { user } = useAuth();
   const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
-  const API_URL = import.meta.env.VITE_API_URL;
-  const { user } = useAuth();
-  if (!user) return <Navigate to="/login" replace />;
-  const COMPANY_ID = user? user.company_id: 0;
 
   useEffect(() => {
     setLoading(true);
-    authFetch(`${API_URL}/company/profile?company_id=${COMPANY_ID}`)
+    authFetch(`${API_URL}/company/profile?company_id=${user.company_id}`)
       .then(res => res.json())
       .then(data => setProfile(data))
       .catch(() => setError("Erro ao carregar perfil da empresa."))
       .finally(() => setLoading(false));
-  }, []);
+  }, [user.company_id]);
 
   function handleChange(e) {
     const { name, value, type, checked } = e.target;
@@ -37,13 +34,13 @@ export default function ConfigPage() {
     setSaving(true);
     setMessage("");
     setError("");
-    authFetch(`${API_URL}/company/profile?company_id=${COMPANY_ID}`, {
+    authFetch(`${API_URL}/company/profile?company_id=${user.company_id}`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(profile),
     })
       .then(res => res.json())
-      .then(data => setMessage(data.message || "Salvo com sucesso!"), setTimeout(() => setMessage(""), 3000))
+      .then(data => setMessage(data.message || "Salvo com sucesso!"))
       .catch(() => setError("Erro ao salvar alterações."))
       .finally(() => setSaving(false));
   }
@@ -54,14 +51,14 @@ export default function ConfigPage() {
 
   return (
     <div className="p-6 max-w-3xl mx-auto">
-      <h2 className="text-2xl font-bold mb-6">Configurações da Empresa</h2>
-      {message && (
-        <div className="fixed bottom-8 right-8 bg-green-600 text-white px-6 py-3 rounded-xl shadow-xl z-50 animate-fade-in-up font-semibold transition">
-          {message}
-        </div>
-      )}
-      {error && <div className="mb-4 p-2 bg-red-100 text-red-700 rounded">{error}</div>}
-      <form onSubmit={handleSave} className="space-y-6">
+        <h2 className="text-2xl font-bold mb-6">Configuração da Empresa</h2>
+        {message && (
+            <div className="fixed bottom-8 right-8 bg-green-600 text-white px-6 py-3 rounded-xl shadow-xl z-50 animate-fade-in-up font-semibold transition">
+                {message}
+            </div>
+        )}
+        {error && <div className="mb-4 p-2 bg-red-100 text-red-700 rounded">{error}</div>}
+        <form onSubmit={handleSave} className="space-y-6">
         {/* Dados da empresa */}
         <div>
           <h3 className="font-semibold mb-2 text-primary">Dados da Empresa</h3>
@@ -149,11 +146,6 @@ export default function ConfigPage() {
           {saving ? "Salvando..." : "Salvar Alterações"}
         </button>
       </form>
-      {/* SEÇÃO DE DOCUMENTOS */}
-      <div className="mt-12">
-        <h2 className="text-2xl font-bold mb-6">Base de Documentos</h2>
-        <UploadDocuments />
-      </div>
     </div>
   );
 }

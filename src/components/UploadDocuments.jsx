@@ -1,10 +1,12 @@
 import React, { useEffect, useState, useRef } from "react";
 import { authFetch } from "../utils/authFetch";
+import { FaTimes } from "react-icons/fa";
+import { useAuth } from "../utils/authData";
 
 const API_URL = import.meta.env.VITE_API_URL;
-const COMPANY_ID = 1; // ajuste para o id dinâmico da empresa logada
 
 export default function UploadDocuments() {
+  const { user } = useAuth();
   const [docs, setDocs] = useState([]);
   const [file, setFile] = useState(null);
   const [title, setTitle] = useState("");
@@ -29,7 +31,7 @@ export default function UploadDocuments() {
 
   function fetchDocs() {
     console.log()
-    authFetch(`${API_URL}/company/documents?company_id=${COMPANY_ID}`)
+    authFetch(`${API_URL}/company/documents?company_id=${user.company_id}`)
       .then(res => res.json())
       .then(data => {
         setDocs(data.documents || []);
@@ -38,6 +40,17 @@ export default function UploadDocuments() {
 
   function handleFileChange(e) {
     setFile(e.target.files[0]);
+  }
+
+  function handleDelete(docId) {
+    if (!window.confirm("Confirma exclusão do documento?")) return;
+    authFetch(`${API_URL}/company/documents/${docId}?company_id=${user.company_id}`, { method: "DELETE" })
+      .then(res => res.json())
+      .then(data => {
+        setMsg(data.message || "Documento excluído!");
+        fetchDocs();
+      })
+      .catch(() => setError("Erro ao excluir documento."));
   }
 
   function handleSubmit(e) {
@@ -53,7 +66,7 @@ export default function UploadDocuments() {
     }
 
     const formData = new FormData();
-    formData.append("company_id", COMPANY_ID);
+    formData.append("company_id", user.company_id);
     formData.append("title", title);
     formData.append("description", description);
     formData.append("tags", tags);
@@ -138,6 +151,7 @@ export default function UploadDocuments() {
                 <th className="p-2 text-left">Descrição</th>
                 <th className="p-2 text-left">Data de Envio</th>
                 <th className="p-2 text-left">Arquivo</th>
+                <th className="p-2 text-left">Excluir</th>
               </tr>
             </thead>
             <tbody>
@@ -146,17 +160,23 @@ export default function UploadDocuments() {
                   <td className="p-2">{doc.title}</td>
                   <td className="p-2">{doc.description}</td>
                   <td className="p-2">
-                  {doc.created_at
+                    {doc.created_at
                     ? new Date(doc.created_at).toLocaleString("pt-BR", {
                         day: "2-digit",
                         month: "2-digit",
-                        year: "numeric",
-                        hour: "2-digit",
-                        minute: "2-digit"
+                        year: "numeric"
                       })
                     : "-"}
-                </td>
+                  </td>
                   <td className="p-2">{doc.file_name || "-"}</td>
+                  <td className="p-2 text-center">
+                  <button
+                    className="text-red-500 hover:text-red-700"
+                    title="Excluir"
+                    onClick={() => handleDelete(doc.id)}>
+                    <FaTimes />
+                  </button>
+                  </td>
                 </tr>
               ))}
             </tbody>

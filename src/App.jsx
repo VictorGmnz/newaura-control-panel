@@ -7,7 +7,9 @@ import MessagesPage from "./pages/MessagesPage";
 import FeedbacksPage from "./pages/FeedbacksPage";
 import ReportsPage from "./pages/ReportsPage";
 import LoginPage from "./pages/LoginPage";
-import ConfigPage from "./pages/ConfigPage";
+import ConfigCompanyPage from "./pages/ConfigCompanyPage";
+import ConfigDocumentsPage from "./pages/ConfigDocumentsPage";
+import ConfigEmployeePage from "./pages/ConfigEmployeePage";
 import { useAuth } from "./utils/authData";
 
 const INACTIVITY_TIMEOUT = 30 * 60 * 1000; // 30 minutos em ms
@@ -76,7 +78,10 @@ export default function App() {
                     <Route path="/mensagens" element={<MessagesPage />} />
                     <Route path="/feedbacks" element={<FeedbacksPage />} />
                     <Route path="/relatorios" element={<ReportsPage />} />
-                    <Route path="/configuracoes" element={<ConfigPage />} />
+                    {/* Rotas de Configuração (submenus): */}
+                    <Route path="/configuracoes/empresa" element={<ConfigCompanyPage />} />
+                    <Route path="/configuracoes/documentos" element={<ConfigDocumentsPage />} />
+                    <Route path="/configuracoes/colaboradores" element={<ConfigEmployeePage />} />
                     <Route path="*" element={<Navigate to="/" />} />
                   </Routes>
                 </main>
