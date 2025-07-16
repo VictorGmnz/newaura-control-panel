@@ -49,25 +49,41 @@ export default function RealTimeMessagesPage() {
     setMyMessage("");
   }
 
+  function refreshSelectedSession(session_id) {
+    authFetch(`${API_URL}/conversations/active/sessions?company_id=${user.company_id}`)
+      .then(res => res.json())
+      .then(data => {
+        setConversas(data.conversations || []);
+        const sess = (data.conversations || []).find(c => c.session_id === session_id);
+        if (sess) setSelectedSession(sess);
+      });
+  }
+
   function takeover() {
     setIsTakingOver(true);
-    authFetch(`${API_URL}/conversations/chatbot/takeover/${selectedSession.session_id}?company_id=${user.company_id}`, {
+    authFetch(`${API_URL}/conversations/chatbot/takeover/${selectedSession.session_id}?human_id=${user.id}`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(user.id)
+      body: JSON.stringify(user.company_id)
     })
       .then(res => res.json())
-      .then(data => {setMsg(data.message || "Você assumiu o controle da conversa.")})
+      .then(data => {
+        setMsg(data.message || "Você assumiu o controle da conversa.");
+        refreshSelectedSession(selectedSession.session_id);
+      })
       .finally(() => setIsTakingOver(false));
   }
 
   function returnToBot() {
     setIsTakingOver(true);
-    authFetch(`${API_URL}/conversations/chatbot/return/${selectedSession.session_id}?company_id=${user.company_id}`, {
+    authFetch(`${API_URL}/conversations/chatbot/takeback/${selectedSession.session_id}?company_id=${user.company_id}`, {
       method: "POST"
     })
       .then(res => res.json())
-      .then(() => setMsg("Controle devolvido ao bot."))
+      .then(() => {
+        setMsg("Controle devolvido ao bot.");
+        refreshSelectedSession(selectedSession.session_id);
+      })
       .finally(() => setIsTakingOver(false));
   }
 
@@ -81,9 +97,9 @@ export default function RealTimeMessagesPage() {
       body: JSON.stringify({ message: myMessage })
     })
       .then(res => res.json())
-      .then(() => {
+      .then(data => {
         setMyMessage("");
-        setMsg("Mensagem enviada.");
+        setMsg(data.message || "Mensagem enviada.")
       })
       .finally(() => setIsTakingOver(false));
   }
