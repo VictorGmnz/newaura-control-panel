@@ -1,11 +1,12 @@
 import React, { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
-import { FaComments, FaChartBar, FaCog, FaChartLine, FaStar, FaFile , FaBuilding, FaUsers } from "react-icons/fa";
+import { FaComments, FaChartBar, FaCog, FaChartLine, FaStar, FaFile , FaBuilding, FaUsers, FaBolt } from "react-icons/fa";
 import { useAuth } from "../utils/authData";
 
   const navItems = [
     { label: "Dashboard", icon: <FaChartLine />, to: "/", roles: ["Administrador", "Supervisor", "Colaborador"] },
     { label: "Conversas", icon: <FaComments />, to: "/mensagens", roles: ["Administrador", "Supervisor", "Colaborador"] },
+    { label: "Conversas Ativas", icon: <FaBolt />, to: "/conversas-ativas", roles: ["Administrador", "Supervisor", "Colaborador"] },
     { label: "Feedbacks", icon: <FaStar />, to: "/feedbacks", roles: ["Administrador", "Supervisor", "Colaborador"] },
     { label: "Relatórios", icon: <FaChartBar />, to: "/relatorios", roles: ["Administrador", "Supervisor"]},
   ];
@@ -24,7 +25,7 @@ export default function Sidebar() {
   if (!user) return null;
 
   return (
-    <aside className="bg-white shadow w-20 md:w-56 flex flex-col fixed left-0 top-20 h-[calc(100vh-56px)]">
+    <aside className="bg-white shadow w-20 md:w-56 flex flex-col fixed left-0 top-20 h-[calc(100vh-56px)] z-50">
       <nav className="flex-1 flex flex-col gap-2 mt-4">
         {navItems
           .filter(item => item.roles.includes(user.role))
@@ -55,7 +56,7 @@ export default function Sidebar() {
               className={`flex items-center px-4 py-2 rounded-lg mx-2 gap-4 cursor-pointer transition ${
                 location.pathname.startsWith("/configuracoes")
                   ? "bg-primary text-white shadow"
-                  : "text-gray-600 hover:bg-gray-100"
+                  : "text-gray-600 hover:bg-gray-200"
               }`}
             >
               <span className="text-lg"><FaCog /></span>
@@ -72,7 +73,7 @@ export default function Sidebar() {
                     style={{ textDecoration: "none" }}
                   >
                     <span className="text-base">{sub.icon}</span>
-                    <span>{sub.label}</span>
+                    <span >{sub.label}</span>
                   </Link>
                 ))}
               </div>

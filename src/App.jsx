@@ -10,6 +10,7 @@ import LoginPage from "./pages/LoginPage";
 import ConfigCompanyPage from "./pages/ConfigCompanyPage";
 import ConfigDocumentsPage from "./pages/ConfigDocumentsPage";
 import ConfigEmployeePage from "./pages/ConfigEmployeePage";
+import RealTimeMessagesPage from "./pages/RealTimeMessagesPage";
 import { useAuth } from "./utils/authData";
 
 const INACTIVITY_TIMEOUT = 30 * 60 * 1000; // 30 minutos em ms
@@ -70,12 +71,13 @@ export default function App() {
           <ProtectedRoute isLogged={!!token}>
             <>
               <Header />
-              <div className="md:ml-56 ml-20 pt-20 px-4 md:px-8 pb-8 bg-gray-100 min-h-screen">
+              <div className="md:ml-56 ml-20 pt-20 px-4 md:px-2 pb-8 bg-gray-100 min-h-screen">
                 <Sidebar />
-                <main className="flex-1 bg-gray-100 min-h-screen pt-4 px-4 md:px-8 pb-8">
+                <main className="flex-1 bg-gray-100 min-h-screen pt-4 px-4 md:px-2 pb-8">
                   <Routes>
                     <Route path="/" element={<Dashboard />} />
                     <Route path="/mensagens" element={<MessagesPage />} />
+                    <Route path="/conversas-ativas" element={<RealTimeMessagesPage />} />
                     <Route path="/feedbacks" element={<FeedbacksPage />} />
                     <Route path="/relatorios" element={<ReportsPage />} />
                     {/* Rotas de Configuração (submenus): */}

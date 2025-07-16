@@ -3,7 +3,7 @@ import DateFilters from "../components/DateFilters";
 import { getDefaultFilters } from "../utils/dateUtils";
 import { authFetch } from "../utils/authFetch";
 import { useAuth } from '../utils/authData';
-import { Navigate } from "react-router-dom";
+import { Navigate, useNavigate  } from "react-router-dom";
 
 export default function MessagesPage({ filters: filtersProp }) {
   const [filters, setFilters] = useState(() =>
@@ -18,8 +18,11 @@ export default function MessagesPage({ filters: filtersProp }) {
   const [filtersAppliedManually, setFiltersAppliedManually] = useState(false);
   const API_URL = import.meta.env.VITE_API_URL;
   const { user } = useAuth();
+  const navigate = useNavigate();
   if (!user) return <Navigate to="/login" replace />;
   const COMPANY_ID = user? user.company_id: 0;
+  const [activeSessions, setActiveSessions] = useState([]);
+  const activeSessionIds = new Set(activeSessions.map(s => s.session_id));
 
   function handleApplyFilters(newFilters) {
     setFilters(newFilters);
@@ -27,6 +30,14 @@ export default function MessagesPage({ filters: filtersProp }) {
     setMessage("Filtros aplicados!");
     setTimeout(() => setMessage(""), 2000); // Some depois de 2 segundos
   }
+
+  useEffect(() => {
+    authFetch(`${API_URL}/conversations/active/sessions?company_id=${user.company_id}`)
+      .then(res => res.json())
+      .then(data => {
+        setActiveSessions(data.conversations || []);
+      });
+    }, [user.company_id]);
 
   useEffect(() => {
     if (filters.start && filters.end) {
@@ -65,19 +76,37 @@ export default function MessagesPage({ filters: filtersProp }) {
             <tr className="bg-[#5A2EBB] text-white">
               <th className="py-3 px-2 text-center font-bold border-r border-white">Telefone</th>
               <th className="py-3 px-2 text-center font-bold border-r border-white">Mensagem Usuário</th>
-              <th className="py-3 px-2 text-center font-bold border-r border-white">Resposta Bot</th>
-              <th className="py-3 px-2 w-[100px] text-center font-bold">Data</th>
+              <th className="py-3 px-2 w-[70%] text-center font-bold border-r border-white">Resposta Bot</th>
+              <th className="py-3 px-2 w-[8%] text-center font-bold">Data</th>
+              <th className="py-3 px-2 w-[8%] text-center font-bold border-r border-white">Status</th>
             </tr>
           </thead>
           <tbody>
-            {messages.map((msg, i) => (
-              <tr key={i} className={i % 2 === 0 ? "bg-gray-50" : "bg-white"}>
-                <td className="py-2 px-2 text-center font-mono border-r border-gray-200">{msg.user_phone}</td>
-                <td className="py-2 px-2 border-r border-gray-200">{msg.user_message}</td>
-                <td className="py-2 px-2 border-r border-gray-200">{msg.bot_response}</td>
-                <td className="py-2 px-2 text-center">{msg.created_at}</td>
-              </tr>
-            ))}
+            {messages.map((msg, i) => {
+              const isActive = activeSessionIds.has(msg.session_id);
+              return (
+                <tr key={i} className={i % 2 === 0 ? "bg-gray-50" : "bg-white"}>
+                  <td className="py-2 px-2 text-center font-mono border-r border-gray-200">{msg.user_phone}</td>
+                  <td className="py-2 px-2 border-r border-gray-200">{msg.user_message}</td>
+                  <td className="py-2 px-2 border-r border-gray-200">{msg.bot_response}</td>
+                  <td className="py-2 px-2 text-center">{msg.created_at}</td>
+                  <td className="py-2 px-2 text-center">
+                    {isActive ? (
+                      <button
+                        className="bg-green-100 text-green-700 px-2 py-1 rounded-full font-semibold cursor-pointer hover:bg-green-200 transition relative"
+                        onClick={() => navigate(`/conversas-ativas?user_phone=${msg.user_phone}`)}
+                        title="Clique aqui para acessar a conversa"
+                        style={{ border: "none" }}
+                      >
+                        Ativa
+                      </button>
+                    ) : (
+                      <span className="bg-gray-100 text-gray-500 px-2 py-1 rounded-full font-semibold">Finalizada</span>
+                    )}
+                  </td>
+                </tr>
+              );
+            })}
           </tbody>
         </table>
       )}
