@@ -41,6 +41,14 @@ export default function RealTimeMessagesPage() {
     return () => clearInterval(pollingRef.current);
   }, [selectedSession]);
 
+  useEffect(() => {
+    if (msg) {
+      const timeout = setTimeout(() => setMsg(""), 3000);
+      return () => clearTimeout(timeout);
+    }
+  }, [msg]);
+
+
   function handleSelect(session) {
     setSelectedSession(session);
     setMensagens([]);
@@ -61,14 +69,13 @@ export default function RealTimeMessagesPage() {
 
   function takeover() {
     setIsTakingOver(true);
-    authFetch(`${API_URL}/conversations/chatbot/takeover/${selectedSession.session_id}?human_id=${user.id}`, {
+    authFetch(`${API_URL}/conversations/chatbot/takeover/${selectedSession.session_id}?human_id=${user.id}&company_id=${user.company_id}`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(user.company_id)
+      headers: { "Content-Type": "application/json" }
     })
       .then(res => res.json())
       .then(data => {
-        setMsg(data.message || "Você assumiu o controle da conversa.");
+        setMsg(console.log(data.message) || "Você assumiu o controle da conversa.");
         refreshSelectedSession(selectedSession.session_id);
       })
       .finally(() => setIsTakingOver(false));
@@ -104,42 +111,49 @@ export default function RealTimeMessagesPage() {
       .finally(() => setIsTakingOver(false));
   }
 
-function renderMessage(msg, idx) {
-  const items = [];
-  if (msg.user_message) {
-    items.push(
-      <div
-        key={`${idx}-user`}
-        className="flex w-full mb-2 justify-start"
-      >
-        <div className="px-4 py-2 rounded-2xl shadow max-w-[70%] bg-gray-200 text-gray-900 whitespace-pre-line">
-          {msg.user_message}
-        </div>
-      </div>
-    );
-  }
+  function renderMessage(msg, idx) {
+    const mensagens = [];
 
-  if (msg.response) {
-    const isBot = msg.author === "Bot";
-    const isHuman = msg.author === "Human";
-    items.push(
-      <div
-        key={`${idx}-resp`}
-        className="flex w-full mb-2 justify-end"
-      >
-        <div className={`
-          px-4 py-2 rounded-2xl shadow max-w-[70%] whitespace-pre-line
-          ${isBot ? "bg-primary text-white" : ""}
-          ${isHuman ? "bg-green-100 text-green-700 border border-green-300" : ""}
-        `}>
-          {isBot && <span>{msg.response}</span>}
-          {isHuman && <span><FaUserCheck className="inline mr-1" />{msg.author || "Human"}: {msg.response}</span>}
+    if (msg.user_message) {
+      mensagens.push(
+        <div
+          key={`${idx}-user`}
+          className="flex w-full mb-2 justify-start"
+        >
+          <div className="px-4 py-2 rounded-2xl shadow max-w-[70%] bg-gray-200 text-gray-900 whitespace-pre-line">
+            {msg.user_message}
+          </div>
         </div>
-      </div>
-    );
+      );
+    }
+
+    if (msg.response) {
+      const isBot = msg.author === "Bot";
+      const isHuman = msg.author === "Human";
+      mensagens.push(
+        <div
+          key={`${idx}-resp`}
+          className="flex w-full mb-2 justify-end"
+        >
+          <div className={`
+            px-4 py-2 rounded-2xl shadow max-w-[70%] whitespace-pre-line
+            ${isBot ? "bg-primary text-white" : ""}
+            ${isHuman ? "bg-green-100 text-green-700 border border-green-300" : ""}
+          `}>
+            {isBot && <span>{msg.response}</span>}
+            {isHuman && (
+              <span>
+                <FaUserCheck className="inline mr-1" />
+                <b>{msg.human_name || "Atendente"}:</b> {msg.response}
+              </span>
+            )}
+          </div>
+        </div>
+      );
+    }
+
+    return mensagens;
   }
-  return items;
-}
 
   function statusControle(session) {
     if (session.control === "human")
@@ -219,7 +233,7 @@ function renderMessage(msg, idx) {
             {/* Mensagens */}
             <div className="flex-1 p-6 overflow-y-auto flex flex-col">
               {mensagens.length === 0 && <div className="text-gray-400">Nenhuma mensagem nesta conversa ainda.</div>}
-              {mensagens.map(renderMessage)}
+              {mensagens.flatMap(renderMessage)}
             </div>
             {/* Input do humano */}
             {selectedSession.control === "human" && (
