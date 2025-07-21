@@ -16,7 +16,7 @@ export default function LastConversationsTable({ conversations }) {
         <tbody>
           {conversations.map((c, i) => (
             <tr key={i} className="border-t">
-              <td className="py-2 px-3">{c.name}</td>
+              <td className="py-2 px-3">{c.name? c.name: "Nome não informado"}{` - `}{c.phone}</td>
               <td className="py-2 px-3">{c.date}</td>
               <td className="py-2 px-3">{c.message}</td>
               <td className="py-2 px-3">

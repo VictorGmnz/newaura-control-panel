@@ -42,7 +42,13 @@ export default function MessagesPage({ filters: filtersProp }) {
   useEffect(() => {
     if (filters.start && filters.end) {
       let url = `${API_URL}/admin/messages?start_date=${filters.start}&end_date=${filters.end}&company_id=${COMPANY_ID}`;
-      if (filters.phone) url += `&phone=55${encodeURIComponent(filters.phone)}`;
+      if (filters.phone) {
+        let phone = filters.phone.trim();
+        if (!phone.startsWith("55")) {
+          phone = "55" + phone;
+        }
+        url += `&phone=${encodeURIComponent(phone)}`;
+      }
       authFetch(url)
         .then(res => {
           if (!res.ok) throw new Error("Erro ao buscar mensagens");
@@ -76,7 +82,7 @@ export default function MessagesPage({ filters: filtersProp }) {
             <tr className="bg-[#5A2EBB] text-white">
               <th className="py-3 px-2 text-center font-bold border-r border-white">Telefone</th>
               <th className="py-3 px-2 text-center font-bold border-r border-white">Mensagem Usuário</th>
-              <th className="py-3 px-2 w-[70%] text-center font-bold border-r border-white">Resposta Bot</th>
+              <th className="py-3 px-2 w-[70%] text-center font-bold border-r border-white">Resposta</th>
               <th className="py-3 px-2 w-[8%] text-center font-bold">Data</th>
               <th className="py-3 px-2 w-[8%] text-center font-bold border-r border-white">Status</th>
             </tr>

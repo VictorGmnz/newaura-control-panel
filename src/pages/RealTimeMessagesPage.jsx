@@ -116,17 +116,13 @@ export default function RealTimeMessagesPage() {
 
     if (msg.user_message) {
       mensagens.push(
-        <div
-          key={`${idx}-user`}
-          className="flex w-full mb-2 justify-start"
-        >
+        <div key={`${idx}-user`} className="flex w-full mb-2 justify-start">
           <div className="px-4 py-2 rounded-2xl shadow max-w-[70%] bg-gray-200 text-gray-900 whitespace-pre-line">
             {msg.user_message}
           </div>
         </div>
       );
     }
-
     if (msg.response) {
       const isBot = msg.author === "Bot";
       const isHuman = msg.author === "Human";
@@ -141,24 +137,32 @@ export default function RealTimeMessagesPage() {
             ${isHuman ? "bg-green-100 text-green-700 border border-green-300" : ""}
           `}>
             {isBot && <span>{msg.response}</span>}
-            {isHuman && (
-              <span>
-                <FaUserCheck className="inline mr-1" />
-                <b>{msg.human_name || "Atendente"}:</b> {msg.response}
-              </span>
-            )}
+          {isHuman && (
+            <div>
+              <div className="font-bold mb-1">{msg.employee_name || "Atendente"}:</div>
+              <div>{msg.response}</div>
+            </div>
+          )}
           </div>
         </div>
       );
     }
-
     return mensagens;
   }
 
   function statusControle(session) {
     if (session.control === "human")
-      return <span className="text-green-700 font-semibold"><FaUserCheck className="inline mr-1" />Humano</span>;
-    return <span className="text-primary font-semibold"><FaRobot className="inline mr-1" />Bot</span>;
+      return (
+        <span className="text-green-700 font-semibold flex items-center">
+          <FaUserCheck className="inline mr-1" />
+          Atendente{session.employee_name ? `: ${session.employee_name}` : ""}
+        </span>
+      );
+    return (
+      <span className="text-primary font-semibold">
+        <FaRobot className="inline mr-1" />Bot
+      </span>
+    );
   }
 
   return (
@@ -180,8 +184,13 @@ export default function RealTimeMessagesPage() {
               onClick={() => handleSelect(conv)}
             >
               <div>
-                <div className="font-semibold flex items-center gap-2">
+                <div className={`font-bold text-base flex items-center gap-2
+                  ${selectedSession && selectedSession.session_id === conv.session_id ? "text-white" : "text-primary"}
+                `}>
                   <FaUser className="inline mr-1" />
+                  {conv.user_name || "Sem nome"}
+                </div>
+                <div className={`text-xs ${selectedSession && selectedSession.session_id === conv.session_id ? "text-purple-200" : "text-gray-500"} ml-6`}>
                   {conv.user_phone}
                 </div>
                 <div className="text-xs">{statusControle(conv)}</div>
@@ -207,7 +216,8 @@ export default function RealTimeMessagesPage() {
                 <button className="md:hidden" onClick={() => setSelectedSession(null)}>
                   <FaArrowLeft />
                 </button>
-                <span className="font-bold text-lg">{selectedSession.user_phone}</span>
+                <span className="font-bold text-xl">{selectedSession.user_name || "Sem nome"}</span>
+                <span className="ml-2 text-sm text-gray-400">{selectedSession.user_phone}</span>
                 <span className="ml-4">{statusControle(selectedSession)}</span>
               </div>
               <div className="flex gap-2">
