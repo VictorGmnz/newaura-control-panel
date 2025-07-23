@@ -107,6 +107,7 @@ export default function RealTimeMessagesPage() {
       .then(data => {
         setMyMessage("");
         setMsg(data.message || "Mensagem enviada.")
+        fetchMensagens(selectedSession.session_id);
       })
       .finally(() => setIsTakingOver(false));
   }

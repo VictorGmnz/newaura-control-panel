@@ -85,16 +85,16 @@ export default function ConfigEmployeePage() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(body)
     })
-      .then(res => res.json())
-      .then(data => {
-        if (data.detail) setError(data.detail);
+      .then(async res => {
+        const data = await res.json();
+        if (!res.ok) throw new Error(data?.detail || "Erro ao salvar colaborador.");
         else {
           setSuccess(data.message);
           fetchColabs();
           closeModal();
         }
       })
-      .catch(() => setError("Erro ao salvar colaborador."));
+      .catch(err => setError(err.message));
   }
 
   function handleInactivate(id) {

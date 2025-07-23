@@ -92,7 +92,7 @@ export default function UploadDocuments() {
           fetchDocs();
         }
       })
-      .catch(() => setError(data.detail || "Erro ao enviar documento."))
+      .catch(() => setError("Erro no envio do documento."))
       .finally(() => setUploading(false));
   }
 
