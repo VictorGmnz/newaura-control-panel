@@ -28,7 +28,7 @@ export default function MessagesPage({ filters: filtersProp }) {
     setFilters(newFilters);
     setFiltersAppliedManually(true);
     setMessage("Filtros aplicados!");
-    setTimeout(() => setMessage(""), 2000); // Some depois de 2 segundos
+    setTimeout(() => setMessage(""), 2000);
   }
 
   useEffect(() => {

@@ -1,13 +1,12 @@
 import React from "react";
-import { FaBell } from "react-icons/fa";
+import NotificationBell from "./NotificationBell";
 import { useNavigate } from "react-router-dom";
-import { useAuth } from '../utils/authData';
 
 export default function Header() {
   const navigate = useNavigate();
 
   return (
-    <header className="flex items-center justify-between px-4 md:px-8 py-3 bg-[#5A2EBB] shadow w-full fixed top-0 left-0 z-20 h-20 ">
+    <header className="flex items-center justify-between px-4 md:px-8 py-3 bg-[#5A2EBB] shadow w-full fixed top-0 left-0 z-20 h-24 ">
     <div className="flex items-center gap-12 ml-2">
     <img
       src="/logo-sem-fundo.png"
@@ -24,10 +23,7 @@ export default function Header() {
       </div>
     </div>
       <div className="flex items-center gap-5">
-        <button className="relative p-2 rounded-full hover:bg-[#6847c6] transition">
-          <FaBell className="text-white text-lg" />
-          <span className="absolute top-1 right-1 w-2 h-2 bg-accent rounded-full border border-white"></span>
-        </button>
+          <NotificationBell />
         <img
           src="https://ui-avatars.com/api/?name=Cliente&background=fff&color=5A2EBB"
           alt="Avatar"

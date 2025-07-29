@@ -11,6 +11,7 @@ import ConfigCompanyPage from "./pages/ConfigCompanyPage";
 import ConfigDocumentsPage from "./pages/ConfigDocumentsPage";
 import ConfigEmployeePage from "./pages/ConfigEmployeePage";
 import RealTimeMessagesPage from "./pages/RealTimeMessagesPage";
+import ConfigChatbotPage from "./pages/ConfigChatbotPage";
 import { useAuth } from "./utils/authData";
 
 const INACTIVITY_TIMEOUT = 30 * 60 * 1000; // 30 minutos em ms
@@ -71,7 +72,7 @@ export default function App() {
           <ProtectedRoute isLogged={!!token}>
             <>
               <Header />
-              <div className="md:ml-56 ml-20 pt-20 px-4 md:px-2 pb-8 bg-gray-100 min-h-screen">
+              <div className="md:ml-56 ml-20 pt-24 px-4 md:px-2 pb-8 bg-gray-100 min-h-screen">
                 <Sidebar />
                 <main className="flex-1 bg-gray-100 min-h-screen pt-4 px-4 md:px-2 pb-8">
                   <Routes>
@@ -84,6 +85,7 @@ export default function App() {
                     <Route path="/configuracoes/empresa" element={<ConfigCompanyPage />} />
                     <Route path="/configuracoes/documentos" element={<ConfigDocumentsPage />} />
                     <Route path="/configuracoes/colaboradores" element={<ConfigEmployeePage />} />
+                    <Route path="/configuracoes/chatbot" element={<ConfigChatbotPage />} />
                     <Route path="*" element={<Navigate to="/" />} />
                   </Routes>
                 </main>

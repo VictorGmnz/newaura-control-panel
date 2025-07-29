@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
-import { FaComments, FaChartBar, FaCog, FaChartLine, FaStar, FaFile , FaBuilding, FaUsers, FaBolt } from "react-icons/fa";
+import { FaComments, FaChartBar, FaCog, FaChartLine, FaStar, FaFile , FaBuilding, FaUsers, FaBolt, FaRobot } from "react-icons/fa";
 import { useAuth } from "../utils/authData";
 
   const navItems = [
@@ -15,6 +15,7 @@ const configSubMenus = [
   { label: "Empresa", to: "/configuracoes/empresa", icon: <FaBuilding /> },
   { label: "Documentos", to: "/configuracoes/documentos", icon: <FaFile /> },
   { label: "Colaboradores", to: "/configuracoes/colaboradores", icon: <FaUsers /> },
+  { label: "Chatbot", to: "/configuracoes/chatbot", icon: <FaRobot /> },
 ];
 
 export default function Sidebar() {
@@ -25,7 +26,7 @@ export default function Sidebar() {
   if (!user) return null;
 
   return (
-    <aside className="bg-white shadow w-20 md:w-56 flex flex-col fixed left-0 top-20 h-[calc(100vh-56px)] z-50">
+    <aside className="bg-white shadow w-20 md:w-56 flex flex-col fixed left-0 top-24 h-[calc(100vh-56px)] z-50">
       <nav className="flex-1 flex flex-col gap-2 mt-4">
         {navItems
           .filter(item => item.roles.includes(user.role))

@@ -93,46 +93,7 @@ export default function ConfigCompanyPage() {
             </div>
           </div>
         </div>
-        {/* Personalidade do Bot */}
-        <div>
-          <h3 className="font-semibold mb-2 text-primary">Personalidade do Bot</h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm">Nome do Bot:</label>
-              <input name="nome_bot" className="input" value={profile.nome_bot || ""} onChange={handleChange} />
-            </div>
-            <div>
-              <label className="block text-sm">Tom de Voz:</label>
-              <input name="tom_voz" className="input" value={profile.tom_voz || ""} onChange={handleChange} />
-            </div>
-            <div className="md:col-span-2">
-              <label className="block text-sm">Mensagem Boas-vindas:</label>
-              <input name="mensagem_boas_vindas" className="input" value={profile.mensagem_boas_vindas || ""} onChange={handleChange} />
-            </div>
-            <div>
-              <label className="block text-sm">Emoji:</label>
-              <input name="emoji" className="input" value={profile.emoji || ""} onChange={handleChange} maxLength={4} />
-            </div>
-          </div>
-        </div>
-        {/* Funcionalidades */}
-        <div>
-          <h3 className="font-semibold mb-2 text-primary">Funcionalidades</h3>
-          <div className="flex gap-8 flex-wrap">
-            <label className="flex items-center gap-2">
-              <input type="checkbox" name="permite_arquivo" checked={!!profile.permite_arquivo} onChange={handleChange} />
-              Permite Envio de Arquivos
-            </label>
-            <label className="flex items-center gap-2">
-              <input type="checkbox" name="permite_audio" checked={!!profile.permite_audio} onChange={handleChange} />
-              Permite Envio de Áudio
-            </label>
-            <label className="flex items-center gap-2">
-              <input type="checkbox" name="permite_pagamento" checked={!!profile.permite_pagamento} onChange={handleChange} />
-              Permite Pagamento pelo Chat
-            </label>
-          </div>
-        </div>
+
         {/* Plano (apenas leitura) */}
         <div>
           <h3 className="font-semibold mb-2 text-primary">Plano Atual</h3>

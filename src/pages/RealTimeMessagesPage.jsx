@@ -48,7 +48,6 @@ export default function RealTimeMessagesPage() {
     }
   }, [msg]);
 
-
   function handleSelect(session) {
     setSelectedSession(session);
     setMensagens([]);
