@@ -5,13 +5,12 @@ import { useAuth } from "../utils/authData";
 
 const API_URL = import.meta.env.VITE_API_URL;
 
-export default function UploadDocuments() {
+export default function UploadEmployeeDocuments() {
   const { user } = useAuth();
   const [docs, setDocs] = useState([]);
   const [file, setFile] = useState(null);
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
-  const [tags, setTags] = useState("");
   const [uploading, setUploading] = useState(false);
   const [msg, setMsg] = useState("");
   const [error, setError] = useState("");
@@ -25,69 +24,44 @@ export default function UploadDocuments() {
   });
   const docsToShow = Object.values(docsMap);
 
-  useEffect(() => {
-    fetchDocs();
-  }, []);
+  useEffect(() => { fetchDocs(); }, []);
 
   function fetchDocs() {
-    authFetch(`${API_URL}/company/documents?company_id=${user.company_id}&is_employee_doc=false`)
+    authFetch(`${API_URL}/company/documents?company_id=${user.company_id}&is_employee_doc=true`)
       .then(res => res.json())
-      .then(data => {
-        setDocs(data.documents || []);
-      });
+      .then(data => setDocs(data.documents || []));
   }
 
-  function handleFileChange(e) {
-    setFile(e.target.files[0]);
-  }
+  function handleFileChange(e) { setFile(e.target.files[0]); }
 
   function handleDelete(docId) {
     if (!window.confirm("Confirma exclusão do documento?")) return;
-    authFetch(`${API_URL}/company/documents/${docId}?company_id=${user.company_id}&is_employee_doc=false`, { method: "DELETE" })
+    authFetch(`${API_URL}/company/documents/${docId}?company_id=${user.company_id}&is_employee_doc=true`, { method: "DELETE" })
       .then(res => res.json())
-      .then(data => {
-        setMsg(data.message || "Documento excluído!");
-        fetchDocs();
-      })
+      .then(data => { setMsg(data.message || "Documento excluído!"); fetchDocs(); })
       .catch(() => setError("Erro ao excluir documento."));
   }
 
   function handleSubmit(e) {
     e.preventDefault();
-    setUploading(true);
-    setMsg("");
-    setError("");
-
-    if (!file || !title) {
-      setError("Título e arquivo são obrigatórios!");
-      setUploading(false);
-      return;
-    }
+    setUploading(true); setMsg(""); setError("");
+    if (!file || !title) { setError("Título e arquivo são obrigatórios!"); setUploading(false); return; }
 
     const formData = new FormData();
     formData.append("company_id", user.company_id);
     formData.append("title", title);
     formData.append("description", description);
-    formData.append("tags", tags);
     formData.append("created_by", 1);
-    formData.append("is_employee_doc", "false");
+    formData.append("is_employee_doc", "true");
     formData.append("file", file);
 
-    authFetch(`${API_URL}/company/documents/upload`, {
-      method: "POST",
-      body: formData,
-    })
+    authFetch(`${API_URL}/company/documents/upload`, { method: "POST", body: formData })
       .then(res => res.json())
       .then(data => {
-        if(data.detail){
-          setError(data.detail || "Erro ao enviar documento.")
-        }
-        else{
+        if (data.detail) setError(data.detail || "Erro ao enviar documento.");
+        else {
           setMsg(data.message || "Documento enviado com sucesso!");
-          setFile(null);
-          setTitle("");
-          setDescription("");
-          setTags("");
+          setFile(null); setTitle(""); setDescription("");
           if (fileInputRef.current) fileInputRef.current.value = "";
           fetchDocs();
         }
@@ -98,52 +72,26 @@ export default function UploadDocuments() {
 
   return (
     <div className="bg-white rounded-xl shadow p-6 mt-12 max-w-3xl mx-auto">
-      <h3 className="text-xl font-bold text-primary mb-2">📄 Documentos para Clientes</h3>
+      <h3 className="text-xl font-bold text-primary mb-2">📄 Documentos dos Colaboradores</h3>
       <p className="text-gray-500 mb-4">
-        Os documentos inseridos aqui serão utilizados exclusivamente para o Chatbot responder mensagem de seus clientes (ex: cardápios, valores de produtos, etc).
+        Os documentos inseridos aqui serão utilizados exclusivamente para o Chatbot responder mensagem de seus colaboradores (ex: manuais, políticas, prática internas, etc).
       </p>
       <p className="text-yellow-600 mb-4">
         Envie arquivos PDF, DOCX ou XLSX (máx. 10MB). Para maior precisão, prefira arquivos formatados, objetivos e bem estruturados.
       </p>
 
-      {/* Feedback */}
       {msg && <div className="mb-4 p-2 bg-green-100 text-green-700 rounded">{msg}</div>}
       {error && <div className="mb-4 p-2 bg-red-100 text-red-700 rounded">{error}</div>}
 
-      {/* Formulário de upload */}
       <form onSubmit={handleSubmit} className="flex flex-col gap-3">
-        <input
-          ref={fileInputRef}
-          type="file"
-          accept=".pdf,.doc,.docx,.xls,.xlsx"
-          onChange={handleFileChange}
-          className="border rounded px-2 py-1 w-full"
-        />
-        <input
-          type="text"
-          placeholder="Título do Documento"
-          className="border rounded px-2 py-1 w-full"
-          value={title}
-          onChange={e => setTitle(e.target.value)}
-          required
-        />
-        <input
-          type="text"
-          placeholder="Descrição (opcional)"
-          className="border rounded px-2 py-1 w-full"
-          value={description}
-          onChange={e => setDescription(e.target.value)}
-        />
-        <button
-          type="submit"
-          className="bg-primary text-white px-4 py-2 rounded-lg shadow hover:bg-purple-700 transition w-full font-bold"
-          disabled={uploading}
-        >
+        <input ref={fileInputRef} type="file" accept=".pdf,.doc,.docx,.xls,.xlsx" onChange={handleFileChange} className="border rounded px-2 py-1 w-full" />
+        <input type="text" placeholder="Título do Documento" className="border rounded px-2 py-1 w-full" value={title} onChange={e => setTitle(e.target.value)} required />
+        <input type="text" placeholder="Descrição (opcional)" className="border rounded px-2 py-1 w-full" value={description} onChange={e => setDescription(e.target.value)} />
+        <button type="submit" className="bg-primary text-white px-4 py-2 rounded-lg shadow hover:bg-purple-700 transition w-full font-bold" disabled={uploading}>
           {uploading ? "Enviando..." : "Enviar"}
         </button>
       </form>
 
-      {/* Lista de docs */}
       <div className="mt-8">
         <h4 className="text-lg font-semibold mb-2">Documentos já cadastrados</h4>
         <div className="overflow-x-auto rounded-lg shadow">
@@ -162,32 +110,21 @@ export default function UploadDocuments() {
                 <tr key={doc.id}>
                   <td className="p-2">{doc.title}</td>
                   <td className="p-2">{doc.description}</td>
-                  <td className="p-2">
-                    {doc.created_at
-                    ? new Date(doc.created_at).toLocaleString("pt-BR", {
-                        day: "2-digit",
-                        month: "2-digit",
-                        year: "numeric"
-                      })
-                    : "-"}
-                  </td>
+                  <td className="p-2">{doc.created_at ? new Date(doc.created_at).toLocaleDateString("pt-BR") : "-"}</td>
                   <td className="p-2">{doc.file_name || "-"}</td>
                   <td className="p-2 text-center">
-                  <button
-                    className="text-red-500 hover:text-red-700"
-                    title="Excluir"
-                    onClick={() => handleDelete(doc.id)}>
-                    <FaTimes />
-                  </button>
+                    <button className="text-red-500 hover:text-red-700" title="Excluir" onClick={() => handleDelete(doc.id)}>
+                      <FaTimes />
+                    </button>
                   </td>
                 </tr>
               ))}
+              {docsToShow.length === 0 && (
+                <tr><td className="text-center text-gray-500 py-4" colSpan={5}>Nenhum documento cadastrado ainda.</td></tr>
+              )}
             </tbody>
           </table>
         </div>
-        {docsToShow.length === 0 && (
-          <div className="text-center text-gray-500 py-4">Nenhum documento cadastrado ainda.</div>
-        )}
       </div>
     </div>
   );
