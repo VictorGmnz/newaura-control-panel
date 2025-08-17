@@ -14,7 +14,7 @@ import { useAuth } from "../utils/authData";
 const configSubMenus = [
   { label: "Empresa", to: "/configuracoes/empresa", icon: <FaBuilding /> },
   { label: "Documentos", to: "/configuracoes/documentos", icon: <FaFile /> },
-  { label: "Colaboradores", to: "/configuracoes/colaboradores", icon: <FaUsers /> },
+  { label: "Administração", to: "/configuracoes/administração", icon: <FaUsers /> },
   { label: "Chatbot", to: "/configuracoes/chatbot", icon: <FaRobot /> },
 ];
 

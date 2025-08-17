@@ -247,7 +247,7 @@ export default function ConfigChatbotPage() {
 
   return (
     <div className="p-6 max-w-3xl mx-auto">
-      <h2 className="text-2xl font-bold mb-6">Configuração do Chatbot</h2>
+      <h2 className="text-2xl font-bold mb-6 text-center">Configuração do Chatbot</h2>
 
       {/* Abas */}
       <div className="mb-6 flex gap-2 border-b">

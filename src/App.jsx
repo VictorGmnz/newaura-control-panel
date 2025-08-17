@@ -84,7 +84,7 @@ export default function App() {
                     {/* Rotas de Configuração (submenus): */}
                     <Route path="/configuracoes/empresa" element={<ConfigCompanyPage />} />
                     <Route path="/configuracoes/documentos" element={<ConfigDocumentsPage />} />
-                    <Route path="/configuracoes/colaboradores" element={<ConfigEmployeePage />} />
+                    <Route path="/configuracoes/administração" element={<ConfigEmployeePage />} />
                     <Route path="/configuracoes/chatbot" element={<ConfigChatbotPage />} />
                     <Route path="*" element={<Navigate to="/" />} />
                   </Routes>

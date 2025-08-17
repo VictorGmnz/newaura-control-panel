@@ -51,7 +51,7 @@ export default function ConfigCompanyPage() {
 
   return (
     <div className="p-6 max-w-3xl mx-auto">
-        <h2 className="text-2xl font-bold mb-6">Configuração da Empresa</h2>
+        <h2 className="text-2xl font-bold mb-6 text-center">Configuração da Empresa</h2>
         {message && (
             <div className="fixed bottom-8 right-8 bg-green-600 text-white px-6 py-3 rounded-xl shadow-xl z-50 animate-fade-in-up font-semibold transition">
                 {message}
