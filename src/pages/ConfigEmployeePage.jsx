@@ -278,7 +278,7 @@ export default function ConfigEmployeePage() {
 
       {/* CARGOS */}
       <div className="mt-12">
-        <h2 className="text-2xl font-bold mb-4 text-center"> Gestão de Cargos</h2>
+        <h2 className="text-2xl font-bold mb-4 text-center">Gestão de Cargos</h2>
         <div className="flex items-center justify-between mb-4">
           <button
             onClick={() => openRoleModal()}

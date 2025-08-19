@@ -156,6 +156,11 @@ export default function UploadEmployeeDocuments() {
       setUploading(false);
       return;
     }
+    if (file.size > 10 * 1024 * 1024) {
+      setError("Arquivo excede 10 MB!");
+      setUploading(false);
+      return;
+    }
 
     try {
       const formData = new FormData();
@@ -171,6 +176,24 @@ export default function UploadEmployeeDocuments() {
         method: "POST",
         body: formData,
       });
+
+      if (!uploadRes.ok) {
+        let errMsg = `Erro ${uploadRes.status}`;
+        const ct = uploadRes.headers.get("content-type") || "";
+        try {
+          if (ct.includes("application/json")) {
+            const j = await uploadRes.json();
+            errMsg = j?.detail || j?.message || errMsg;
+          } else {
+            const t = await uploadRes.text();
+            errMsg = t?.slice(0, 300) || errMsg;
+          }
+        } catch (_) {
+          // fallback
+        }
+        throw new Error(errMsg);
+      }      
+      
       const uploadJson = await uploadRes.json();
 
       if (uploadJson.detail) throw new Error(uploadJson.detail);
@@ -181,7 +204,6 @@ export default function UploadEmployeeDocuments() {
           : "Documento enviado (acesso para todos os colaboradores)."
       );
 
-      // reset
       setFile(null);
       setTitle("");
       setDescription("");

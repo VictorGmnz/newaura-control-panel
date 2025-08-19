@@ -1,79 +1,9 @@
 import React, { useEffect, useState, useMemo } from "react";
 import { authFetch } from "../utils/authFetch";
 import { useAuth } from "../utils/authData";
+import FaqByRole from "../components/FaqByRole";
+import AutoTextarea from "../utils/AutoTextarea";
 
-/* ============ Helpers Inline ============ */
-function FaqPorCargoEditor({ value = [], onChange }) {
-  const addCargo = () => onChange([...(value || []), { role: "", qas: [] }]);
-  const setRole = (i, role) => {
-    const next = [...value]; next[i].role = role; onChange(next);
-  };
-  const addQA = (i) => {
-    const next = [...value]; next[i].qas.push({ q: "", a: "" }); onChange(next);
-  };
-  const setQA = (i, j, field, val) => {
-    const next = [...value]; next[i].qas[j][field] = val; onChange(next);
-  };
-  const removeCargo = (i) => onChange(value.filter((_, idx) => idx !== i));
-  const removeQA = (i, j) => {
-    const next = [...value]; next[i].qas = next[i].qas.filter((_, idx) => idx !== j); onChange(next);
-  };
-
-  return (
-    <div className="space-y-4">
-      {(value || []).map((cargo, i) => (
-        <div key={i} className="border rounded-lg p-3">
-          <div className="flex gap-2 items-center mb-2">
-            <input
-              className="input"
-              placeholder="Cargo (ex.: Comercial)"
-              value={cargo.role}
-              onChange={(e) => setRole(i, e.target.value)}
-            />
-            <button type="button" className="text-red-600" onClick={() => removeCargo(i)}>
-              Remover cargo
-            </button>
-          </div>
-          <div className="space-y-2">
-            {(cargo.qas || []).map((qa, j) => (
-              <div key={j} className="grid grid-cols-1 md:grid-cols-2 gap-2 items-start">
-                <input
-                  className="input"
-                  placeholder="Pergunta"
-                  value={qa.q}
-                  onChange={(e) => setQA(i, j, "q", e.target.value)}
-                />
-                <div className="flex gap-2">
-                  <input
-                    className="input flex-1"
-                    placeholder="Resposta"
-                    value={qa.a}
-                    onChange={(e) => setQA(i, j, "a", e.target.value)}
-                  />
-                  <button
-                    type="button"
-                    className="text-red-600 px-2"
-                    onClick={() => removeQA(i, j)}
-                  >
-                    Remover
-                  </button>
-                </div>
-              </div>
-            ))}
-            <button type="button" className="bg-gray-100 px-3 py-1 rounded" onClick={() => addQA(i)}>
-              + Adicionar Q&A
-            </button>
-          </div>
-        </div>
-      ))}
-      <button type="button" className="bg-primary text-white px-4 py-2 rounded-lg" onClick={addCargo}>
-        + Adicionar Cargo
-      </button>
-    </div>
-  );
-}
-
-/* Mapeamento: cargo -> atendente */
 function AttendantRoleRouter({ attendants = [], roles = [], mapping = {}, onChange }) {
   const byId = useMemo(() => {
     const m = {}; attendants.forEach(a => m[a.id] = a); return m;
@@ -114,10 +44,29 @@ function AttendantRoleRouter({ attendants = [], roles = [], mapping = {}, onChan
   );
 }
 
+function sanitizeFaqClient(faqs) {
+  return (faqs || [])
+    .map(f => ({ q: (f.q || "").trim(), a: (f.a || "").trim() }))
+    .filter(f => f.q && f.a);
+}
+
+function sanitizeFaqByRole(list) {
+  return (list || [])
+    .filter(b => b.role_id)
+    .map(b => ({
+      role_id: Number(b.role_id),
+      qa: (b.qa || [])
+        .map(x => ({ q: (x.q || "").trim(), a: (x.a || "").trim() }))
+        .filter(x => x.q && x.a)
+    }))
+    .filter(b => b.qa.length > 0);
+}
+
 /* ============ Página principal ============ */
 export default function ConfigChatbotPage() {
-  const [tab, setTab] = useState("clientes"); // "clientes" | "colaboradores"
+  const [tab, setTab] = useState("clientes");
   const isEmployee = tab === "colaboradores";
+  const [faqByRole, setFaqByRole] = useState([]);
 
   // Campos CLIENTES (existentes)
   const [nomeBot, setNomeBot] = useState("");
@@ -136,12 +85,10 @@ export default function ConfigChatbotPage() {
   const [customFields, setCustomFields] = useState([{ label: "", value: "" }]);
   const [faqs, setFaqs] = useState([{ q: "", a: "" }]);
 
-  // Campos COLABORADORES (novos)
-  const [faqPorCargo, setFaqPorCargo] = useState([]); // [{ role, qas:[{q,a}] }]
-  const [employeeRouting, setEmployeeRouting] = useState({}); // { [roleName]: employee_id }
-  const [employees, setEmployees] = useState([]); // lista completa para montar combos
+  const [employeeRouting, setEmployeeRouting] = useState({});
+  const [employees, setEmployees] = useState([]);
+  const [rolesForFaq, setRolesForFaq] = useState([]);
 
-  // Auxiliares
   const { user } = useAuth();
   const [message, setMessage] = useState("");
   const COMPANY_ID = user ? user.company_id : null;
@@ -152,10 +99,9 @@ export default function ConfigChatbotPage() {
       setCustomFields([...customFields, { label: "", value: "" }]);
   }
 
-  /* Fetch: configuração (respeitando aba) */
   useEffect(() => {
     if (!COMPANY_ID) return;
-    const url = `${API_URL}/chatbot/config?company_id=${COMPANY_ID}&is_employee=${isEmployee}`;
+    const url = `${API_URL}/chatbot/config?company_id=${COMPANY_ID}&is_employee_faq=${isEmployee}`;
     authFetch(url)
       .then((res) => {
         if (!res.ok) throw new Error("Falha ao carregar configurações.");
@@ -175,23 +121,30 @@ export default function ConfigChatbotPage() {
           setMissao(data.missao || "");
           setPersona(data.persona || "");
           setProdutos(data.produtos && data.produtos.length > 0 ? data.produtos : [""]);
-          setFaqs(Array.isArray(data.faqs_client) && data.faqs_client.length? data.faqs_client: [{ q: "", a: "" }]);
+          setFaqs(Array.isArray(data.faqs_client) && data.faqs_client.length ? data.faqs_client : [{ q: "", a: "" }]);
           setCustomFields(data.extra_fields && data.extra_fields.length > 0 ? data.extra_fields : [{ label: "", value: "" }]);
         } else {
-          setFaqPorCargo(data.faq_por_cargo || []);
+          setFaqByRole(Array.isArray(data.faqs_employee_by_role) ? data.faqs_employee_by_role : []);
           setEmployeeRouting(data.employee_routing || {});
         }
       })
       .catch((err) => console.log("Erro ao buscar configs:", err));
   }, [COMPANY_ID, isEmployee, API_URL]);
 
-  /* Fetch: colaboradores (para montar lista de atendentes e extrair cargos) */
   useEffect(() => {
     if (!COMPANY_ID || !isEmployee) return;
     authFetch(`${API_URL}/company/employees?company_id=${COMPANY_ID}`)
       .then((res) => res.json())
       .then((list) => setEmployees(Array.isArray(list) ? list : []))
       .catch(() => setEmployees([]));
+  }, [COMPANY_ID, isEmployee, API_URL]);
+
+  useEffect(() => {
+    if (!COMPANY_ID || !isEmployee) return;
+    authFetch(`${API_URL}/company/roles?company_id=${COMPANY_ID}`)
+      .then(res => res.json())
+      .then(data => setRolesForFaq(Array.isArray(data.roles) ? data.roles : []))
+      .catch(() => setRolesForFaq([]));
   }, [COMPANY_ID, isEmployee, API_URL]);
 
   const rolesFromEmployees = useMemo(() => {
@@ -201,14 +154,14 @@ export default function ConfigChatbotPage() {
   }, [employees]);
 
   const attendants = useMemo(() => {
-    // regra simples: todos ativos podem ser designados. (ajustável no futuro)
     return (employees || []).filter((e) => e?.status);
   }, [employees]);
 
-  /* Save: respeita aba e payload enxuto */
-  function handleSubmit(e) {
+  async function handleSubmit(e) {
     e.preventDefault();
-    const url = `${API_URL}/chatbot/config?company_id=${COMPANY_ID}&is_employee=${isEmployee}`;
+    setMessage("");
+
+    const url = `${API_URL}/chatbot/config?company_id=${COMPANY_ID}&is_employee_faq=${isEmployee}`;
 
     const payload = !isEmployee
       ? {
@@ -220,29 +173,31 @@ export default function ConfigChatbotPage() {
           permite_audio: permiteAudio,
           permite_pagamento: permitePagamento,
           segmento,
-          diferenciais: diferenciais.filter((d) => d.trim() !== ""),
+          diferenciais: (diferenciais || []).map(d => d.trim()).filter(Boolean),
           missao,
           persona,
-          produtos: produtos.filter((p) => p.trim() !== ""),
-          extra_fields: customFields.filter((c) => c.label?.trim() && c.value?.trim()),
-          faqs_client: faqs.map(f => ({ q: (f.q || "").trim(), a: (f.a || "").trim() })).filter(f => f.q && f.a)
+          produtos: (produtos || []).map(p => p.trim()).filter(Boolean),
+          extra_fields: (customFields || []).filter(c => c.label?.trim() && c.value?.trim() ),
+          faqs_client: sanitizeFaqClient(faqs),
         }
       : {
-          faq_por_cargo: faqPorCargo,
-          employee_routing: employeeRouting, // { cargo: employee_id }
+          employee_routing: employeeRouting,
+          faqs_employee_by_role: sanitizeFaqByRole(faqByRole),
         };
 
-    authFetch(url, {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload)
-    })
-      .then((res) => res.json())
-      .then((data) => {
-        setMessage(data.message || "Configuração salva com sucesso!");
-        setTimeout(() => setMessage(""), 3000);
-      })
-      .catch(() => alert("Erro ao salvar as configurações do chatbot!"));
+    try {
+      const res = await authFetch(url, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload)
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data?.detail || "Erro ao salvar configuração.");
+      setMessage(data.message || "Configuração salva com sucesso!");
+      setTimeout(() => setMessage(""), 3000);
+    } catch (err) {
+      alert(err.message || "Erro ao salvar as configurações do chatbot!");
+    }
   }
 
   return (
@@ -266,7 +221,7 @@ export default function ConfigChatbotPage() {
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-6">
-        {/* ==== CLIENTES (campos existentes) ==== */}
+        {/* ==== CLIENTES ==== */}
         {!isEmployee && (
           <>
             <div>
@@ -294,13 +249,14 @@ export default function ConfigChatbotPage() {
                 </div>
                 <div className="md:col-span-2">
                   <label className="block text-sm">Mensagem Boas-vindas:</label>
-                  <textarea
+                  <AutoTextarea
                     className="input min-h-[40px] max-w-[100%]"
                     value={mensagemBoasVindas}
                     onChange={(e) => setMensagemBoasVindas(e.target.value)}
                     maxLength={120}
                     placeholder="Ex: Olá! Tudo bem? Como posso te ajudar hoje? 😊"
-                    rows={2}
+                    minRows={2}
+                    maxRows={6}
                   />
                 </div>
                 <div>
@@ -341,13 +297,14 @@ export default function ConfigChatbotPage() {
 
             <div>
               <label className="block font-semibold">Objetivo e Personalidade do Bot:</label>
-              <textarea
+              <AutoTextarea
                 value={persona}
                 onChange={(e) => setPersona(e.target.value)}
                 className="input min-h-[48px] max-w-[100%]"
                 maxLength={500}
                 placeholder="Ex: Atue como um vendedor, tendo como objetivo..."
-                rows={6}
+                minRows={6}
+                maxRows={10}
               />
             </div>
 
@@ -366,7 +323,7 @@ export default function ConfigChatbotPage() {
               <label className="block font-semibold">Diferenciais da Empresa:</label>
               {diferenciais.map((d, i) => (
                 <div key={i} className="flex items-start gap-2 mb-3">
-                  <textarea
+                  <AutoTextarea
                     value={d}
                     onChange={(e) => {
                       const arr = [...diferenciais]; arr[i] = e.target.value; setDiferenciais(arr);
@@ -374,7 +331,8 @@ export default function ConfigChatbotPage() {
                     className="input flex-1 min-h-[36px] max-w-[680px]"
                     maxLength={300}
                     placeholder="Ex: Atendimento 24h, personalizamos conforme o gosto..."
-                    rows={2}
+                    minRows={2}
+                    maxRows={6}
                   />
                   <div style={{ width: 36, minWidth: 36, height: 36 }}>
                     {i === diferenciais.length - 1 && (
@@ -390,19 +348,20 @@ export default function ConfigChatbotPage() {
                 </div>
               ))}
               <span className="text-xs text-gray-500">
-                Digite e clique no '<b className="text-primary">+</b>' para adicionar. (Limite de 10)
+                Se desejar clique no '<b className="text-primary">+</b>' para adicionar novos campos. (Limite de 10)
               </span>
             </div>
 
             <div>
               <label className="block font-semibold">Missão da Empresa:</label>
-              <textarea
+              <AutoTextarea
                 value={missao}
                 onChange={(e) => setMissao(e.target.value)}
                 className="input min-h-[48px] max-w-[680px]"
                 maxLength={300}
                 placeholder="Ex: Inovar o setor, fornecer um ambiente onde o cliente..."
-                rows={4}
+                minRows={4}
+                maxRows={8}
               />
             </div>
 
@@ -410,7 +369,7 @@ export default function ConfigChatbotPage() {
               <label className="block font-semibold">Produtos/Serviços Principais da Empresa:</label>
               {produtos.map((p, i) => (
                 <div key={i} className="flex items-start gap-2 mb-3">
-                  <textarea
+                  <AutoTextarea
                     value={p}
                     onChange={(e) => {
                       const arr = [...produtos]; arr[i] = e.target.value; setProdutos(arr);
@@ -418,7 +377,8 @@ export default function ConfigChatbotPage() {
                     className="input flex-1 min-h-[48px] max-w-[680px]"
                     maxLength={250}
                     placeholder="Ex: Chatbot através de Inteligência Artificial"
-                    rows={2}
+                    minRows={2}
+                    maxRows={6}
                   />
                   <div style={{ width: 36, minWidth: 36, height: 36 }}>
                     {i === produtos.length - 1 && (
@@ -434,7 +394,7 @@ export default function ConfigChatbotPage() {
                 </div>
               ))}
               <span className="text-xs text-gray-500">
-                Digite e clique no '<b className="text-primary">+</b>' para adicionar. (Limite de 10)
+                Se desejar clique no '<b className="text-primary">+</b>' para adicionar novos campos. (Limite de 10)
               </span>
             </div>
 
@@ -442,7 +402,7 @@ export default function ConfigChatbotPage() {
               <label className="block font-semibold">Perguntas Frequentes dos Clientes (FAQ):</label>
               {faqs.map((f, i) => (
                 <div key={i} className="flex gap-2 mb-1">
-                  <textarea
+                  <AutoTextarea
                     placeholder="Ex: Qual o horário de atendimento?"
                     value={f.q}
                     onChange={(e) => {
@@ -450,20 +410,22 @@ export default function ConfigChatbotPage() {
                     }}
                     className="input flex-1 min-h-[48px] max-w-[300px]"
                     maxLength={80}
-                    rows={2}
+                    minRows={2}
+                    maxRows={4}
                   />
-                  <textarea
-                      className="input flex-1 min-h-[48px] max-w-[380px]"
-                      placeholder="Ex: Nosso horário de atendimento é das 8h às 18h, de segunda a sexta..."
-                      maxLength={300}
-                      rows={2}
-                      value={f.a}
-                      onChange={(e) => {
-                        const next = [...faqs]; next[i] = { ...next[i], a: e.target.value }; setFaqs(next);
-                      }}
-                    />
-                    <div style={{ width: 36, minWidth: 36, height: 36 }}>
-                      {i === faqs.length - 1 && (
+                  <AutoTextarea
+                    className="input flex-1 min-h-[48px] max-w-[380px]"
+                    placeholder="Ex: Nosso horário de atendimento é das 8h às 18h, de segunda a sexta..."
+                    maxLength={300}
+                    minRows={2}
+                    maxRows={8}
+                    value={f.a}
+                    onChange={(e) => {
+                      const next = [...faqs]; next[i] = { ...next[i], a: e.target.value }; setFaqs(next);
+                    }}
+                  />
+                  <div style={{ width: 36, minWidth: 36, height: 36 }}>
+                    {i === faqs.length - 1 && (
                       <button
                         type="button"
                         className="text-primary font-bold w-6 h-8 mt-4 flex items-center justify-center rounded-full bg-white border border-primary hover:bg-primary hover:text-white transition"
@@ -476,7 +438,7 @@ export default function ConfigChatbotPage() {
                 </div>
               ))}
               <span className="text-xs text-gray-500">
-                Digite e clique no '<b className="text-primary">+</b>' para adicionar. (Limite de 20)
+                Se desejar clique no '<b className="text-primary">+</b>' para adicionar novos campos. (Limite de 20)
               </span>
             </div>
 
@@ -484,7 +446,7 @@ export default function ConfigChatbotPage() {
               <label className="block font-semibold">Campos Personalizados:</label>
               {customFields.map((c, i) => (
                 <div key={i} className="flex gap-2 mb-1">
-                  <textarea
+                  <AutoTextarea
                     placeholder="Ex: Clientes nossos:"
                     value={c.label}
                     onChange={(e) => {
@@ -492,9 +454,10 @@ export default function ConfigChatbotPage() {
                     }}
                     className="input flex-1 min-h-[48px] max-w-[300px]"
                     maxLength={80}
-                    rows={2}
+                    minRows={2}
+                    maxRows={4}
                   />
-                  <textarea
+                  <AutoTextarea
                     placeholder="Gisele Bündchen, Neymar Jr..."
                     value={c.value}
                     onChange={(e) => {
@@ -502,7 +465,8 @@ export default function ConfigChatbotPage() {
                     }}
                     className="input flex-1 min-h-[48px] max-w-[380px]"
                     maxLength={300}
-                    rows={2}
+                    minRows={2}
+                    maxRows={6}
                   />
                   <div style={{ width: 36, minWidth: 36, height: 36 }}>
                     {i === customFields.length - 1 && (
@@ -518,15 +482,16 @@ export default function ConfigChatbotPage() {
                 </div>
               ))}
               <span className="text-xs text-gray-500">
-                Digite e clique no '<b className="text-primary">+</b>' para adicionar. (Limite de 10)
+                Se desejar clique no '<b className="text-primary">+</b>' para adicionar novos campos. (Limite de 10)
               </span>
             </div>
           </>
         )}
 
-        {/* ==== COLABORADORES (novos campos) ==== */}
+        {/* ==== COLABORADORES ==== */}
         {isEmployee && (
           <div className="space-y-8">
+            {/*
             <div>
               <h3 className="font-semibold mb-2 text-primary">Designação de Atendentes por Área (Cargo)</h3>
               <p className="text-sm text-gray-600 mb-3">
@@ -539,10 +504,15 @@ export default function ConfigChatbotPage() {
                 onChange={setEmployeeRouting}
               />
             </div>
+            */}
 
             <div>
               <h3 className="font-semibold mb-2 text-primary">FAQ por Cargo</h3>
-              <FaqPorCargoEditor value={faqPorCargo} onChange={setFaqPorCargo} />
+              <FaqByRole
+                value={faqByRole}
+                onChange={setFaqByRole}
+                roles={rolesForFaq}
+              />
               <p className="text-xs text-gray-500 mt-1">
                 Ex.: Cargo “Comercial” → perguntas/respostas comuns para o time.
               </p>
@@ -562,7 +532,7 @@ export default function ConfigChatbotPage() {
 
       <div className="mt-4 mb-4 px-2 py-2 bg-yellow-100 text-yellow-700 rounded shadow text-justify font-semibold w-[100%]">
         Atenção: Apesar de nenhum campo ser obrigatório, estas configurações são cruciais para o funcionamento do seu chatbot.
-        Revise antes de salvar: as mudanças entram em vigor imediatamente.
+        <br/>Revise antes de salvar: as mudanças entram em vigor imediatamente.
       </div>
     </div>
   );
