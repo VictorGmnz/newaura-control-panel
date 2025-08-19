@@ -1,5 +1,5 @@
 import React, { useRef } from "react";
-import AutoTextarea from "../utils/AutoTextarea";
+import AutoTextarea from "../utils/autoTextArea";
 
 function useIdFactory(prefix = "id") {
   const c = useRef(0);

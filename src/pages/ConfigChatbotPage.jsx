@@ -2,7 +2,7 @@ import React, { useEffect, useState, useMemo } from "react";
 import { authFetch } from "../utils/authFetch";
 import { useAuth } from "../utils/authData";
 import FaqByRole from "../components/FaqByRole";
-import AutoTextarea from "../utils/AutoTextarea";
+import AutoTextarea from "../utils/autoTextArea";
 
 function AttendantRoleRouter({ attendants = [], roles = [], mapping = {}, onChange }) {
   const byId = useMemo(() => {
