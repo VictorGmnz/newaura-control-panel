@@ -1,30 +1,30 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useMemo } from "react";
 import { authFetch } from "../utils/authFetch";
 import { useAuth } from "../utils/authData";
 import { FaEye, FaEyeSlash } from "react-icons/fa";
 
 const API_URL = import.meta.env.VITE_API_URL;
 
-const ROLES_FALLBACK = [
-  { value: "Administrador", label: "Administrador" },
-  { value: "Supervisor", label: "Supervisor" },
-  { value: "Colaborador", label: "Colaborador" },
-];
-
 export default function ConfigEmployeePage() {
   const { user } = useAuth();
 
-  // --- Colaboradores ---
   const [colabs, setColabs] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [editing, setEditing] = useState(null);
-  const [form, setForm] = useState({ nome: "", email: "", username: "", password: "", role: "Colaborador" });
+  const [form, setForm] = useState({
+    nome: "",
+    email: "",
+    username: "",
+    password: "",
+    role_id: "",
+    phone: "",
+    cpf: "",
+  });
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
   const [showPassword, setShowPassword] = useState(false);
 
-  // --- Cargos (roles) ---
   const [roles, setRoles] = useState([]);
   const [rolesLoading, setRolesLoading] = useState(false);
   const [roleMsg, setRoleMsg] = useState("");
@@ -36,29 +36,66 @@ export default function ConfigEmployeePage() {
   useEffect(() => {
     fetchColabs();
     fetchRoles();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // ---------------------------
-  // COLABORADORES
-  // ---------------------------
+  const rolesById = useMemo(() => {
+    const m = {};
+    roles.forEach((r) => (m[r.id] = r));
+    return m;
+  }, [roles]);
+
+  const roleLabel = (colab) => {
+    if (colab.role_id && rolesById[colab.role_id]) {
+      const r = rolesById[colab.role_id];
+      return r.role;
+    }
+    if (colab.role) return colab.role;
+    return "—";
+  };
+
   function fetchColabs() {
     setLoading(true);
     setError(""); setSuccess("");
     authFetch(`${API_URL}/company/employees?company_id=${user.company_id}`)
       .then(res => res.json())
-      .then(data => setColabs(data))
+      .then(data => setColabs(Array.isArray(data) ? data : []))
       .catch(() => setError("Erro ao buscar colaboradores."))
       .finally(() => setLoading(false));
   }
 
   function openModal(colab = null) {
     setEditing(colab);
-    setForm(
-      colab
-        ? { ...colab, password: "" }
-        : { nome: "", email: "", username: "", password: "", role: "Colaborador" }
-    );
+
+    if (colab) {
+      let mappedRoleId = "";
+      if (typeof colab.role_id === "number") {
+        mappedRoleId = colab.role_id;
+      } else if (colab.role) {
+        const found = roles.find((r) => (r.role || "").toLowerCase() === (colab.role || "").toLowerCase());
+        mappedRoleId = found ? found.id : "";
+      }
+
+      setForm({
+        nome: colab.nome || colab.employee || "",
+        email: colab.email || "",
+        username: colab.username || "",
+        password: "",
+        role_id: mappedRoleId,
+        phone: colab.phone || "",
+        cpf: colab.cpf || "",
+      });
+    } else {
+      setForm({
+        nome: "",
+        email: "",
+        username: "",
+        password: "",
+        role_id: roles.length ? roles[0].id : "",
+        phone: "",
+        cpf: "",
+      });
+    }
+
     setShowModal(true);
     setError(""); setSuccess("");
   }
@@ -66,7 +103,15 @@ export default function ConfigEmployeePage() {
   function closeModal() {
     setShowModal(false);
     setEditing(null);
-    setForm({ nome: "", email: "", username: "", password: "", role: "Colaborador" });
+    setForm({
+      nome: "",
+      email: "",
+      username: "",
+      password: "",
+      role_id: roles.length ? roles[0].id : "",
+      phone: "",
+      cpf: "",
+    });
   }
 
   function handleChange(e) {
@@ -77,23 +122,46 @@ export default function ConfigEmployeePage() {
   function handleSubmit(e) {
     e.preventDefault();
     setError(""); setSuccess("");
+
     if (!form.nome || !form.username || (!editing && !form.password)) {
       setError("Preencha todos os campos obrigatórios.");
       return;
     }
+    if (!form.role_id) {
+      setError("Selecione um cargo.");
+      return;
+    }
+
     const method = editing ? "PUT" : "POST";
     const url = editing
       ? `${API_URL}/company/employees/${editing.id}?company_id=${user.company_id}`
       : `${API_URL}/company/employees?company_id=${user.company_id}`;
 
+    const phone = (form.phone || "").trim();
+    const cpf = (form.cpf || "").trim();
+
     let body;
     if (editing) {
-      body = { ...form, employee: form.nome };
-      delete body.nome;
+      body = {
+        employee: form.nome,
+        email: form.email,
+        username: form.username,
+        role_id: form.role_id ? Number(form.role_id) : undefined,
+        phone: phone === "" ? "" : phone,
+        cpf: cpf === "" ? "" : cpf,
+      };
+      if (form.password) body.password = form.password;
     } else {
-      body = { ...form };
+      body = {
+        nome: form.nome,
+        email: form.email,
+        username: form.username,
+        password: form.password,
+        role_id: Number(form.role_id),
+        phone: phone === "" ? "" : phone,
+        cpf: cpf === "" ? "" : cpf,
+      };
     }
-    if (editing && !form.password) delete body.password;
 
     authFetch(url, {
       method,
@@ -103,7 +171,7 @@ export default function ConfigEmployeePage() {
       .then(async res => {
         const data = await res.json();
         if (!res.ok) throw new Error(data?.detail || "Erro ao salvar colaborador.");
-        setSuccess(data.message);
+        setSuccess(data.message || "Operação concluída!");
         fetchColabs();
         closeModal();
       })
@@ -115,7 +183,7 @@ export default function ConfigEmployeePage() {
     authFetch(`${API_URL}/company/employees/${id}?company_id=${user.company_id}`, { method: "DELETE" })
       .then(res => res.json())
       .then(() => {
-        setSuccess("Colaborador excluido!");
+        setSuccess("Colaborador excluído!");
         fetchColabs();
       })
       .catch(() => setError("Erro ao excluir colaborador."));
@@ -250,12 +318,10 @@ export default function ConfigEmployeePage() {
           ) : colabs.length > 0 ? (
             colabs.map(colab => (
               <tr key={colab.id} className="border-t">
-                <td className="py-2 px-2">{colab.nome}</td>
+                <td className="py-2 px-2">{colab.nome || colab.employee}</td>
                 <td className="py-2 px-2">{colab.email}</td>
                 <td className="py-2 px-2">{colab.username}</td>
-                <td className="py-2 px-2 text-center">
-                  {ROLES_FALLBACK.find(r => r.value === colab.role)?.label || colab.role}
-                </td>
+                <td className="py-2 px-2 text-center">{roleLabel(colab)}</td>
                 <td className="py-2 px-2 text-center">
                   {colab.status
                     ? <span className="bg-green-100 text-green-700 px-2 py-1 rounded-full">Ativo</span>
@@ -339,7 +405,7 @@ export default function ConfigEmployeePage() {
       {/* MODAL — Novo/Editar Colaborador */}
       {showModal && (
         <div className="fixed inset-0 bg-black bg-opacity-30 flex items-center justify-center z-50">
-          <div className="bg-white rounded-xl p-6 shadow-xl w-full max-w-md animate-fade-in-up relative">
+          <div className="bg-white rounded-xl p-6 shadow-xl w-full max-w-xl animate-fade-in-up relative">
             <button
               className="absolute top-2 right-4 text-gray-500 hover:text-red-700 text-2xl"
               onClick={closeModal}
@@ -372,6 +438,26 @@ export default function ConfigEmployeePage() {
                 onChange={handleChange}
                 required
               />
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <input
+                  type="text"
+                  name="phone"
+                  placeholder="Telefone (DDD+Número)"
+                  className="input"
+                  value={form.phone}
+                  onChange={handleChange}
+                />
+                <input
+                  type="text"
+                  name="cpf"
+                  placeholder="CPF"
+                  className="input"
+                  value={form.cpf}
+                  onChange={handleChange}
+                />
+              </div>
+
               <div className="relative">
                 <input
                   type={showPassword ? "text" : "password"}
@@ -391,18 +477,26 @@ export default function ConfigEmployeePage() {
                   {showPassword ? <FaEyeSlash /> : <FaEye />}
                 </button>
               </div>
-              {/* Mantemos select estático até migrar para role_id */}
+
+              {/* cargos dinâmicos */}
               <select
-                name="role"
+                name="role_id"
                 className="input"
-                value={form.role}
+                value={form.role_id}
                 onChange={handleChange}
                 required
               >
-                {ROLES_FALLBACK.map(r => (
-                  <option key={r.value} value={r.value}>{r.label}</option>
-                ))}
+                {roles.length === 0 ? (
+                  <option value="">— Nenhum cargo ativo —</option>
+                ) : (
+                  roles.map((r) => (
+                    <option key={r.id} value={r.id}>
+                      {r.role}{Number.isFinite(r.access_level) ? ` (Nível ${r.access_level})` : ""}
+                    </option>
+                  ))
+                )}
               </select>
+
               <button
                 type="submit"
                 className="bg-primary text-white px-4 py-2 rounded-lg shadow hover:bg-purple-700 transition w-full font-bold"

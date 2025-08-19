@@ -1,15 +1,15 @@
 import React, { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
-import { FaComments, FaChartBar, FaCog, FaChartLine, FaStar, FaFile , FaBuilding, FaUsers, FaBolt, FaRobot } from "react-icons/fa";
+import { FaComments, FaChartBar, FaCog, FaChartLine, FaStar, FaFile, FaBuilding, FaUsers, FaBolt, FaRobot } from "react-icons/fa";
 import { useAuth } from "../utils/authData";
 
-  const navItems = [
-    { label: "Dashboard", icon: <FaChartLine />, to: "/", roles: ["Administrador", "Supervisor", "Colaborador"] },
-    { label: "Conversas", icon: <FaComments />, to: "/mensagens", roles: ["Administrador", "Supervisor", "Colaborador"] },
-    { label: "Conversas Ativas", icon: <FaBolt />, to: "/conversas-ativas", roles: ["Administrador", "Supervisor", "Colaborador"] },
-    { label: "Feedbacks", icon: <FaStar />, to: "/feedbacks", roles: ["Administrador", "Supervisor", "Colaborador"] },
-    { label: "Relatórios", icon: <FaChartBar />, to: "/relatorios", roles: ["Administrador", "Supervisor"]},
-  ];
+const navItems = [
+  { label: "Dashboard", icon: <FaChartLine />, to: "/", minLevel: 1 },
+  { label: "Conversas", icon: <FaComments />, to: "/mensagens", minLevel: 1 },
+  { label: "Conversas Ativas", icon: <FaBolt />, to: "/conversas-ativas", minLevel: 1 },
+  { label: "Feedbacks", icon: <FaStar />, to: "/feedbacks", minLevel: 2 },
+  { label: "Relatórios", icon: <FaChartBar />, to: "/relatorios", minLevel: 2 },
+];
 
 const configSubMenus = [
   { label: "Empresa", to: "/configuracoes/empresa", icon: <FaBuilding /> },
@@ -18,6 +18,14 @@ const configSubMenus = [
   { label: "Chatbot", to: "/configuracoes/chatbot", icon: <FaRobot /> },
 ];
 
+function getUserLevel(user) {
+  if (Number.isFinite(user?.access_level)) return Number(user.access_level);
+  if (Number.isFinite(user?.level)) return Number(user.level);
+  if (user?.role === "Administrador") return 3;
+  if (user?.role === "Supervisor") return 2;
+  return 1;
+}
+
 export default function Sidebar() {
   const location = useLocation();
   const { user } = useAuth();
@@ -25,11 +33,13 @@ export default function Sidebar() {
 
   if (!user) return null;
 
+  const userLevel = getUserLevel(user);
+
   return (
     <aside className="bg-white shadow w-20 md:w-56 flex flex-col fixed left-0 top-24 h-[calc(100vh-56px)] z-50">
       <nav className="flex-1 flex flex-col gap-2 mt-4">
         {navItems
-          .filter(item => item.roles.includes(user.role))
+          .filter(item => userLevel >= item.minLevel)
           .map((item) => (
             <Link
               key={item.label}
@@ -46,10 +56,9 @@ export default function Sidebar() {
             </Link>
           ))}
 
-        {/* Configurações com sub-menu */}
-        {user.role === "Administrador" && (
+        {userLevel >= 3 && (
           <div
-            className={`relative group`}
+            className="relative group"
             onMouseEnter={() => setShowConfig(true)}
             onMouseLeave={() => setShowConfig(false)}
           >
@@ -63,18 +72,17 @@ export default function Sidebar() {
               <span className="text-lg"><FaCog /></span>
               <span className="hidden md:inline text-base">Configurações</span>
             </div>
-            {/* Sub-menu dropdown */}
             {showConfig && (
               <div className="absolute left-full top-0 bg-white border rounded-lg shadow-xl min-w-[180px] z-50 py-2 flex flex-col animate-fade-in-up">
                 {configSubMenus.map((sub) => (
                   <Link
                     key={sub.label}
                     to={sub.to}
-                    className={`flex items-center gap-2 px-4 py-2 text-gray-700 hover:bg-[#5A2EBB] hover:text-white`}
+                    className="flex items-center gap-2 px-4 py-2 text-gray-700 hover:bg-[#5A2EBB] hover:text-white"
                     style={{ textDecoration: "none" }}
                   >
                     <span className="text-base">{sub.icon}</span>
-                    <span >{sub.label}</span>
+                    <span>{sub.label}</span>
                   </Link>
                 ))}
               </div>
