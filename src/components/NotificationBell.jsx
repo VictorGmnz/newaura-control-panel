@@ -3,9 +3,11 @@ import { authFetch } from "../utils/authFetch";
 import { useAuth } from "../utils/authData";
 import { Bell } from "lucide-react";
 import clsx from "clsx";
+import { useNavigate } from "react-router-dom";
 
 export default function NotificationBell() {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const COMPANY_ID = user?.company_id;
   const API_URL = import.meta.env.VITE_API_URL;
 
@@ -19,70 +21,57 @@ export default function NotificationBell() {
   const animateTimeoutRef = useRef(null);
   const pollRef = useRef(null);
 
-function playChime() {
-  try {
-    const Ctx = window.AudioContext || window.webkitAudioContext;
-    if (!Ctx) return;
-    if (!audioCtxRef.current) audioCtxRef.current = new Ctx();
-    const ctx = audioCtxRef.current;
-    if (ctx.state === "suspended") ctx.resume().catch(() => {});
-
-    const now = ctx.currentTime;
-    const notes = [1046.5, 1318.5];
-    const arpegioStep = 0.06;
-    const lp = ctx.createBiquadFilter();
-    lp.type = "lowpass";
-    lp.frequency.value = 3200;
-    lp.Q.value = 0.7;
-    lp.connect(ctx.destination);
-
-    notes.forEach((f, i) => {
-      const startAt = now + i * arpegioStep;
-
-      // oscilador principal
-      const osc = ctx.createOscillator();
-      osc.type = "sine";
-      osc.frequency.setValueAtTime(f, startAt);
-
-      // leve harmônico de fundo
-      const oscH = ctx.createOscillator();
-      oscH.type = "sine";
-      oscH.frequency.setValueAtTime(f * 2, startAt);
-
-      const g = ctx.createGain();
-      g.gain.setValueAtTime(0.0001, startAt);
-      g.gain.exponentialRampToValueAtTime(0.08, startAt + 0.02);
-      g.gain.exponentialRampToValueAtTime(0.0001, startAt + 0.28);
-
-      const gH = ctx.createGain();
-      gH.gain.setValueAtTime(0.0001, startAt);
-      gH.gain.exponentialRampToValueAtTime(0.02, startAt + 0.02);
-      gH.gain.exponentialRampToValueAtTime(0.0001, startAt + 0.24);
-
-      osc.connect(g);   g.connect(lp);
-      oscH.connect(gH); gH.connect(lp);
-
-      osc.start(startAt);
-      osc.stop(startAt + 0.5); // duração do som principal
-      oscH.start(startAt);
-      oscH.stop(startAt + 0.46); // duração do som de fundo
-
-      // “eco” leve (uma repetição sutil)
-      const dly = ctx.createDelay();
-      dly.delayTime.value = 0.18;
-      const gD = ctx.createGain();
-      gD.gain.value = 0.18; // volume do eco
-
-      const send = ctx.createGain();
-      send.gain.value = 0.5;
-      g.connect(send);
-      gH.connect(send);
-      send.connect(dly);
-      dly.connect(gD);
-      gD.connect(lp);
-    });
-  } catch (_) {}
-}
+  function playChime() {
+    try {
+      const Ctx = window.AudioContext || window.webkitAudioContext;
+      if (!Ctx) return;
+      if (!audioCtxRef.current) audioCtxRef.current = new Ctx();
+      const ctx = audioCtxRef.current;
+      if (ctx.state === "suspended") ctx.resume().catch(() => {});
+      const now = ctx.currentTime;
+      const notes = [1046.5, 1318.5];
+      const arpegioStep = 0.06;
+      const lp = ctx.createBiquadFilter();
+      lp.type = "lowpass";
+      lp.frequency.value = 3200;
+      lp.Q.value = 0.7;
+      lp.connect(ctx.destination);
+      notes.forEach((f, i) => {
+        const startAt = now + i * arpegioStep;
+        const osc = ctx.createOscillator();
+        osc.type = "sine";
+        osc.frequency.setValueAtTime(f, startAt);
+        const oscH = ctx.createOscillator();
+        oscH.type = "sine";
+        oscH.frequency.setValueAtTime(f * 2, startAt);
+        const g = ctx.createGain();
+        g.gain.setValueAtTime(0.0001, startAt);
+        g.gain.exponentialRampToValueAtTime(0.08, startAt + 0.02);
+        g.gain.exponentialRampToValueAtTime(0.0001, startAt + 0.28);
+        const gH = ctx.createGain();
+        gH.gain.setValueAtTime(0.0001, startAt);
+        gH.gain.exponentialRampToValueAtTime(0.02, startAt + 0.02);
+        gH.gain.exponentialRampToValueAtTime(0.0001, startAt + 0.24);
+        osc.connect(g);   g.connect(lp);
+        oscH.connect(gH); gH.connect(lp);
+        osc.start(startAt);
+        osc.stop(startAt + 0.5);
+        oscH.start(startAt);
+        oscH.stop(startAt + 0.46);
+        const dly = ctx.createDelay();
+        dly.delayTime.value = 0.18;
+        const gD = ctx.createGain();
+        gD.gain.value = 0.18;
+        const send = ctx.createGain();
+        send.gain.value = 0.5;
+        g.connect(send);
+        gH.connect(send);
+        send.connect(dly);
+        dly.connect(gD);
+        gD.connect(lp);
+      });
+    } catch (_) {}
+  }
 
   useEffect(() => {
     if (!COMPANY_ID) return;
@@ -97,19 +86,15 @@ function playChime() {
         let newCount = 0;
         curr.forEach(id => { if (!prevIdsRef.current.has(id)) newCount++; });
         prevIdsRef.current = curr;
-
         if (!mounted) return;
         setEvents(incoming);
-
         if (newCount > 0) {
           setAnimate(true);
           playChime();
           clearTimeout(animateTimeoutRef.current);
           animateTimeoutRef.current = setTimeout(() => setAnimate(false), 1200);
         }
-      } catch {
-        // silencioso
-      }
+      } catch {}
     };
 
     fetchEvents();
@@ -151,6 +136,23 @@ function playChime() {
       .catch(() => {});
   };
 
+  const openConversation = async (ev) => {
+    const qs = new URLSearchParams();
+    if (ev.user_phone) qs.set("phone", String(ev.user_phone));
+    if (ev.message_id) qs.set("message_id", String(ev.message_id));
+    const url = `/conversas-ativas?${qs.toString()}`;
+    try {
+      await authFetch(`${API_URL}/admin/events/${ev.id}/view`, { method: "POST" });
+      setEvents(prev => {
+        const next = prev.filter(e => e.id !== ev.id);
+        prevIdsRef.current = new Set(next.map(e => e.id));
+        return next;
+      });
+    } catch {}
+    setOpen(false);
+    navigate(url);
+  };
+
   return (
     <div className="relative" ref={dropdownRef}>
       <button
@@ -179,7 +181,14 @@ function playChime() {
               <li className="text-gray-500 py-6 text-center">Nenhuma notificação no momento.</li>
             )}
             {events.map(event => (
-              <li key={event.id} className="border-b last:border-b-0 py-2 flex items-start gap-2">
+              <li
+                key={event.id}
+                className="border-b last:border-b-0 py-2 flex items-start gap-2 cursor-pointer hover:bg-gray-50 rounded"
+                role="button"
+                tabIndex={0}
+                onClick={() => openConversation(event)}
+                onKeyDown={(e) => { if (e.key === "Enter") openConversation(event); }}
+              >
                 <span className="block w-2 h-2 mt-2 rounded-full bg-primary"></span>
                 <div className="flex-1">
                   <div className="font-semibold text-primary">
@@ -195,9 +204,20 @@ function playChime() {
                     <b>{new Date(event.created_at).toLocaleString("pt-BR")}</b>
                   </div>
                 </div>
-                <button onClick={() => handleView(event.id)} className="ml-2 text-xs text-primary underline">
-                  Lida
-                </button>
+                <div className="flex flex-col items-end gap-2 ml-2">
+                  <button
+                    onClick={(e) => { e.stopPropagation(); openConversation(event); }}
+                    className="text-xs text-primary underline"
+                  >
+                    Abrir conversa
+                  </button>
+                  <button
+                    onClick={(e) => { e.stopPropagation(); handleView(event.id); }}
+                    className="text-[11px] text-gray-600 hover:underline"
+                  >
+                    Marcar lida
+                  </button>
+                </div>
               </li>
             ))}
           </ul>

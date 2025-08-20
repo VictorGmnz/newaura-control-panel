@@ -1,6 +1,17 @@
 import React from "react";
+import { useNavigate } from "react-router-dom";
 
 export default function LastConversationsTable({ conversations }) {
+  const navigate = useNavigate();
+
+  function handleGoToConversation(c) {
+    // só leva se estiver ativa
+    if (c.status !== "Ativa") return;
+    const qs = new URLSearchParams();
+    if (c.phone) qs.set("phone", String(c.phone));
+    navigate(`/conversas-ativas?${qs.toString()}`);
+  }
+
   return (
     <div className="bg-white p-4 rounded-xl shadow w-full overflow-x-auto">
       <h3 className="font-semibold mb-2 text-primary">Últimas conversas</h3>
@@ -15,8 +26,16 @@ export default function LastConversationsTable({ conversations }) {
         </thead>
         <tbody>
           {conversations.map((c, i) => (
-            <tr key={i} className="border-t">
-              <td className="py-2 px-3">{c.name? c.name: "Nome não informado"}{` - `}{c.phone}</td>
+            <tr
+              key={i}
+              className={`border-t ${
+                c.status === "Ativa" ? "cursor-pointer hover:bg-gray-50" : ""
+              }`}
+              onClick={() => handleGoToConversation(c)}
+            >
+              <td className="py-2 px-3">
+                {c.name ? c.name : "Nome não informado"} - {c.phone}
+              </td>
               <td className="py-2 px-3">{c.date}</td>
               <td className="py-2 px-3">{c.message}</td>
               <td className="py-2 px-3">

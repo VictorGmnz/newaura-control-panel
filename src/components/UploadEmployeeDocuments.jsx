@@ -340,6 +340,7 @@ export default function UploadEmployeeDocuments() {
 
         <input
           type="text"
+          maxLength={200}
           placeholder="Título do Documento"
           className="border rounded px-3 py-2 w-full"
           value={title}
@@ -349,6 +350,7 @@ export default function UploadEmployeeDocuments() {
 
         <input
           type="text"
+          maxLength={500}
           placeholder="Descrição (opcional)"
           className="border rounded px-3 py-2 w-full"
           value={description}

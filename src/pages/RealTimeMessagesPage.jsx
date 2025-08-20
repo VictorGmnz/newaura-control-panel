@@ -2,24 +2,35 @@ import React, { useEffect, useState, useRef } from "react";
 import { useAuth } from "../utils/authData";
 import { authFetch } from "../utils/authFetch";
 import { FaUser, FaComments, FaRobot, FaUserCheck, FaChevronRight, FaSync, FaArrowLeft } from "react-icons/fa";
+import { useLocation } from "react-router-dom";
 
 export default function RealTimeMessagesPage() {
   const { user } = useAuth();
+  const location = useLocation();
+
   const [conversas, setConversas] = useState([]);
   const [selectedSession, setSelectedSession] = useState(null);
   const [mensagens, setMensagens] = useState([]);
   const [msg, setMsg] = useState("");
   const [myMessage, setMyMessage] = useState("");
   const [isTakingOver, setIsTakingOver] = useState(false);
-  const pollingRef = useRef();
+  const [initialPhone, setInitialPhone] = useState(null);
 
+  const pollingRef = useRef();
   const API_URL = import.meta.env.VITE_API_URL;
+
+  useEffect(() => {
+    const sp = new URLSearchParams(location.search);
+    const phone = sp.get("phone");
+    setInitialPhone(phone || null);
+  }, [location.search]);
 
   function fetchConversas() {
     authFetch(`${API_URL}/conversations/active/sessions?company_id=${user.company_id}`)
       .then(res => res.json())
       .then(data => {
-        setConversas(data.conversations || [])
+        const list = data.conversations || [];
+        setConversas(list);
       });
   }
 
@@ -28,7 +39,7 @@ export default function RealTimeMessagesPage() {
     authFetch(`${API_URL}/conversations/session/${session_id}?company_id=${user.company_id}`)
       .then(res => res.json())
       .then(data => {
-        setMensagens(data.messages || [])
+        setMensagens(data.messages || []);
       });
   }
 
@@ -47,6 +58,12 @@ export default function RealTimeMessagesPage() {
       return () => clearTimeout(timeout);
     }
   }, [msg]);
+
+  useEffect(() => {
+    if (!initialPhone || selectedSession || conversas.length === 0) return;
+    const target = conversas.find(c => String(c.user_phone || "").includes(String(initialPhone)));
+    if (target) handleSelect(target);
+  }, [initialPhone, conversas, selectedSession]);
 
   function handleSelect(session) {
     setSelectedSession(session);
@@ -105,7 +122,7 @@ export default function RealTimeMessagesPage() {
       .then(res => res.json())
       .then(data => {
         setMyMessage("");
-        setMsg(data.message || "Mensagem enviada.")
+        setMsg(data.message || "Mensagem enviada.");
         fetchMensagens(selectedSession.session_id);
       })
       .finally(() => setIsTakingOver(false));
@@ -113,7 +130,6 @@ export default function RealTimeMessagesPage() {
 
   function renderMessage(msg, idx) {
     const mensagens = [];
-
     if (msg.user_message) {
       mensagens.push(
         <div key={`${idx}-user`} className="flex w-full mb-2 justify-start">
@@ -127,22 +143,19 @@ export default function RealTimeMessagesPage() {
       const isBot = msg.author === "Bot";
       const isHuman = msg.author === "Human";
       mensagens.push(
-        <div
-          key={`${idx}-resp`}
-          className="flex w-full mb-2 justify-end"
-        >
+        <div key={`${idx}-resp`} className="flex w-full mb-2 justify-end">
           <div className={`
             px-4 py-2 rounded-2xl shadow max-w-[70%] whitespace-pre-line
             ${isBot ? "bg-primary text-white" : ""}
             ${isHuman ? "bg-green-100 text-green-700 border border-green-300" : ""}
           `}>
             {isBot && <span>{msg.response}</span>}
-          {isHuman && (
-            <div>
-              <div className="font-bold mb-1">{msg.employee_name || "Atendente"}:</div>
-              <div>{msg.response}</div>
-            </div>
-          )}
+            {isHuman && (
+              <div>
+                <div className="font-bold mb-1">{msg.employee_name || "Atendente"}:</div>
+                <div>{msg.response}</div>
+              </div>
+            )}
           </div>
         </div>
       );
@@ -159,15 +172,14 @@ export default function RealTimeMessagesPage() {
         </span>
       );
     return (
-      <span className="text-primary font-semibold">
-        <FaRobot className="inline mr-1" />Bot
+      <span className="text-blue-500 font-semibold">
+        <FaRobot className="inline mr-1" />Atendente: ChatBot
       </span>
     );
   }
 
   return (
     <div className="flex h-[calc(100vh-80px)] bg-gray-50">
-      {/* Lista lateral */}
       <aside className="w-72 bg-white border-r h-full overflow-y-auto shadow flex-shrink-0">
         <div className="font-bold text-lg px-4 py-3 border-b bg-gray-200 flex items-center gap-2">
           <FaComments className="text-primary" /> Conversas Ativas
@@ -202,7 +214,6 @@ export default function RealTimeMessagesPage() {
         </ul>
       </aside>
 
-      {/* Painel central de chat */}
       <main className="flex-1 flex flex-col h-full relative">
         {!selectedSession ? (
           <div className="flex flex-1 items-center justify-center text-gray-400">
@@ -210,7 +221,6 @@ export default function RealTimeMessagesPage() {
           </div>
         ) : (
           <>
-            {/* Barra superior */}
             <div className="flex items-center justify-between bg-white border-b px-6 py-3 shadow-sm">
               <div className="flex items-center gap-3">
                 <button className="md:hidden" onClick={() => setSelectedSession(null)}>
@@ -240,17 +250,12 @@ export default function RealTimeMessagesPage() {
                 )}
               </div>
             </div>
-            {/* Mensagens */}
             <div className="flex-1 p-6 overflow-y-auto flex flex-col">
               {mensagens.length === 0 && <div className="text-gray-400">Nenhuma mensagem nesta conversa ainda.</div>}
               {mensagens.flatMap(renderMessage)}
             </div>
-            {/* Input do humano */}
             {selectedSession.control === "human" && (
-              <form
-                onSubmit={sendHumanMessage}
-                className="flex gap-2 p-4 bg-white border-t"
-              >
+              <form onSubmit={sendHumanMessage} className="flex gap-2 p-4 bg-white border-t">
                 <input
                   type="text"
                   className="flex-1 border rounded px-4 py-2"
