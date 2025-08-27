@@ -27,10 +27,16 @@ export default function UploadEmployeeDocuments() {
   const [rolesByDoc, setRolesByDoc] = useState({});
   const fileInputRef = useRef(null);
 
+  const canAccess =
+    Array.isArray(user?.allowed_pages)
+      ? (user.allowed_pages.includes("config_documents") || user.allowed_pages.includes("config_root"))
+      : true;
+
   useEffect(() => {
+    if (!canAccess) return;
     fetchDocs();
     fetchCompanyRoles();
-  }, []);
+  }, [canAccess]);
 
   useEffect(() => {
     const grouped = groupByFileName(docs);
@@ -96,7 +102,13 @@ export default function UploadEmployeeDocuments() {
     try {
       const res = await authFetch(`${API_URL}/company/roles?company_id=${user.company_id}`);
       const data = await res.json();
-      setRoles(data.roles || []);
+      const list = (data.roles || []).slice().sort((a, b) => {
+        const la = Number.isFinite(a.access_level) ? a.access_level : 999999;
+        const lb = Number.isFinite(b.access_level) ? b.access_level : 999999;
+        if (la !== lb) return la - lb;
+        return (a.role || "").localeCompare(b.role || "");
+      });
+      setRoles(list);
     } catch {
       setRoles([]);
     }
@@ -188,14 +200,11 @@ export default function UploadEmployeeDocuments() {
             const t = await uploadRes.text();
             errMsg = t?.slice(0, 300) || errMsg;
           }
-        } catch (_) {
-          // fallback
-        }
+        } catch {}
         throw new Error(errMsg);
-      }      
-      
-      const uploadJson = await uploadRes.json();
+      }
 
+      const uploadJson = await uploadRes.json();
       if (uploadJson.detail) throw new Error(uploadJson.detail);
 
       setMsg(
@@ -213,14 +222,12 @@ export default function UploadEmployeeDocuments() {
       setRolesByDoc({});
       fetchDocs();
     } catch (err) {
-      console.error(err);
       setError(err?.message || "Erro no envio do documento.");
     } finally {
       setUploading(false);
     }
   }
 
-  // ====== UX de seleção de cargos ======
   const filteredRoles = roles.filter((r) => {
     const q = roleSearch.trim().toLowerCase();
     if (!q) return true;
@@ -241,7 +248,6 @@ export default function UploadEmployeeDocuments() {
     setSelectedRoleIds([]);
   }
 
-  // ====== Helpers de UI ======
   function renderDocRolesCell(representativeId) {
     const entry = rolesByDoc[representativeId];
 
@@ -268,12 +274,9 @@ export default function UploadEmployeeDocuments() {
 
     const isExpanded = !!expandedDocs[representativeId];
     const maxVisible = 4;
-
     const visible = isExpanded ? arr : arr.slice(0, maxVisible);
     const hidden = isExpanded ? [] : arr.slice(maxVisible);
     const hiddenCount = hidden.length;
-
-    // lista completa para tooltip (mesmo quando não expandido)
     const fullListTitle = arr.map(r => r.role).join(", ");
 
     return (
@@ -315,6 +318,14 @@ export default function UploadEmployeeDocuments() {
     );
   }
 
+  if (!canAccess) {
+    return (
+      <div className="bg-white rounded-xl shadow p-6 mt-12 max-w-4xl mx-auto">
+        <h3 className="text-xl font-bold text-primary mb-2">📄 Documentos dos Colaboradores</h3>
+        <p className="text-gray-600">Você não tem permissão para acessar esta seção.</p>
+      </div>
+    );
+  }
 
   return (
     <div className="bg-white rounded-xl shadow p-6 mt-12 max-w-6xl mx-auto">
@@ -357,7 +368,6 @@ export default function UploadEmployeeDocuments() {
           onChange={(e) => setDescription(e.target.value)}
         />
 
-        {/* Campo de Cargos com UX melhorada */}
         <div className="border rounded-lg p-3">
           <div className="flex items-center justify-between gap-2 mb-2">
             <label className="text-sm font-medium">Cargos permitidos (opcional)</label>
@@ -380,7 +390,7 @@ export default function UploadEmployeeDocuments() {
             </button>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-1 max-h-40 overflow-auto pr-1">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-1 max-h-48 overflow-auto pr-1">
             {filteredRoles.map((r) => {
               const checked = selectedRoleIds.includes(r.id);
               return (

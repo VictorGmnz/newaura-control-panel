@@ -160,7 +160,7 @@ export default function NotificationBell() {
         className={`relative w-9 h-9 flex items-center justify-center rounded-full hover:bg-primary/10 transition ${animate ? "animate-shake" : ""}`}
         aria-label="Notificações"
       >
-        <Bell className="w-6 h-6 text-white" />
+        <Bell className="w-8 h-8 text-white" />
         {events.length > 0 && (
           <span className={clsx("absolute top-0 right-0 w-3 h-3 rounded-full border-2 border-white bg-red-500 animate-pulse")}></span>
         )}

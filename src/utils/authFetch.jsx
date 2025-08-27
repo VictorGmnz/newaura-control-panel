@@ -1,21 +1,37 @@
-// authFetch.jsx
-
-export function authFetch(url, options = {}) {
+export async function authFetch(input, init = {}) {
+  let url = typeof input === "string" ? input : input?.url || "";
+  const headers = new Headers(init.headers || {});
   const token = localStorage.getItem("token");
-  const headers = {
-    ...(options.headers || {}),
-    ...(token ? { Authorization: `Bearer ${token}` } : {})
-  };
+  const userRaw = localStorage.getItem("user");
+  let user = null;
 
-  return fetch(url, { ...options, headers })
-    .then(async res => {
-      if (res.status === 401) {
-        if (!window.location.pathname.includes("/login")) {
-          localStorage.removeItem("token");
-          alert("Ocorreu um problema. Por favor, faça login novamente.");
-          window.location.href = "/login";
-        }
+  try { user = userRaw ? JSON.parse(userRaw) : null; } catch {}
+
+  if (token) headers.set("Authorization", `Bearer ${token}`);
+
+  const base = import.meta.env.VITE_API_URL || "";
+  if (url && base && url.startsWith(base)) {
+    try {
+      const u = new URL(url);
+      if (user?.company_id && !u.searchParams.has("company_id")) {
+        u.searchParams.set("company_id", user.company_id);
+      } else if (user?.companyId && !u.searchParams.has("company_id")) {
+        u.searchParams.set("company_id", user.companyId);
       }
-      return res;
-    });
+      url = u.toString();
+    } catch {}
+  }
+
+  const res = await fetch(url, { ...init, headers });
+
+  if (res.status === 401) {
+
+    localStorage.removeItem("token");
+    localStorage.removeItem("user");
+    if (!window.location.pathname.startsWith("/login")) {
+      window.location.href = "/login";
+    }
+  }
+
+  return res;
 }

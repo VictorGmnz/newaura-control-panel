@@ -1,9 +1,32 @@
-import React, { useEffect, useState, useRef } from "react";
+import React, { useEffect, useState, useRef, useMemo } from "react";
 import { authFetch } from "../utils/authFetch";
 import { FaTimes } from "react-icons/fa";
 import { useAuth } from "../utils/authData";
 
 const API_URL = import.meta.env.VITE_API_URL;
+
+function Arrow({ active, dir }) {
+  const cls = active ? "opacity-100" : "opacity-30";
+  return <span className={`ml-1 text-xs ${cls}`}>{dir === "asc" ? "▲" : "▼"}</span>;
+}
+
+function toTimestamp(dateStr) {
+  if (!dateStr) return 0;
+  if (dateStr.includes("-")) {
+    const t = Date.parse(dateStr);
+    return Number.isNaN(t) ? 0 : t;
+  }
+  const m = /^(\d{2})\/(\d{2})\/(\d{4})$/.exec(dateStr.trim());
+  if (m) {
+    const d = parseInt(m[1], 10);
+    const mo = parseInt(m[2], 10) - 1;
+    const y = parseInt(m[3], 10);
+    const dt = new Date(y, mo, d).getTime();
+    return Number.isNaN(dt) ? 0 : dt;
+  }
+  const t = Date.parse(dateStr);
+  return Number.isNaN(t) ? 0 : t;
+}
 
 export default function UploadDocuments() {
   const { user } = useAuth();
@@ -18,6 +41,10 @@ export default function UploadDocuments() {
   const [msg, setMsg] = useState("");
   const [error, setError] = useState("");
 
+  const [searchTitle, setSearchTitle] = useState("");
+  const [sortKey, setSortKey] = useState("created_at");
+  const [sortDir, setSortDir] = useState("desc");
+
   const fileInputRef = useRef(null);
 
   const docsMap = {};
@@ -27,9 +54,30 @@ export default function UploadDocuments() {
   });
   const docsToShow = Object.values(docsMap);
 
+  const docsFiltered = useMemo(() => {
+    const q = searchTitle.trim().toLowerCase();
+    if (!q) return docsToShow;
+    return docsToShow.filter(d => (d.title || "").toLowerCase().includes(q));
+  }, [searchTitle, docsToShow]);
+
+  const docsView = useMemo(() => {
+    const arr = docsFiltered.slice();
+    arr.sort((a, b) => {
+      if (sortKey === "created_at") {
+        const ta = toTimestamp(a.created_at);
+        const tb = toTimestamp(b.created_at);
+        return sortDir === "asc" ? ta - tb : tb - ta;
+      }
+      const va = (a[sortKey] || "").toString().toLowerCase();
+      const vb = (b[sortKey] || "").toString().toLowerCase();
+      const cmp = va.localeCompare(vb, undefined, { sensitivity: "base" });
+      return sortDir === "asc" ? cmp : -cmp;
+    });
+    return arr;
+  }, [docsFiltered, sortKey, sortDir]);
+
   useEffect(() => {
     fetchDocs();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   function fetchDocs() {
@@ -43,7 +91,6 @@ export default function UploadDocuments() {
   function handleFileChange(e) {
     const f = e.target.files?.[0] || null;
     setFile(f);
-    // (Opcional) valida 10MB
     if (f && f.size > 10 * 1024 * 1024) {
       setError("Tamanho máximo do arquivo é 10MB.");
       if (fileInputRef.current) fileInputRef.current.value = "";
@@ -82,7 +129,7 @@ export default function UploadDocuments() {
       formData.append("description", description);
       formData.append("tags", tags);
       formData.append("created_by", user?.id || 1);
-      formData.append("is_employee_doc", "false"); // cliente
+      formData.append("is_employee_doc", "false");
       formData.append("file", file);
 
       const res = await authFetch(`${API_URL}/company/documents/upload`, {
@@ -101,6 +148,15 @@ export default function UploadDocuments() {
       setError(err?.message || "Erro no envio do documento.");
     } finally {
       setUploading(false);
+    }
+  }
+
+  function toggleSort(key) {
+    if (sortKey === key) {
+      setSortDir(prev => (prev === "asc" ? "desc" : "asc"));
+    } else {
+      setSortKey(key);
+      setSortDir(key === "created_at" ? "desc" : "asc");
     }
   }
 
@@ -140,7 +196,6 @@ export default function UploadDocuments() {
           value={description}
           onChange={(e) => setDescription(e.target.value)}
         />
-        {/* Tags (opcional) */}
         <input
           type="text"
           placeholder="Tags (opcional, separadas por vírgula | ex.: cardápio, valores, promoções)"
@@ -159,20 +214,42 @@ export default function UploadDocuments() {
       </form>
 
       <div className="mt-8">
-        <h4 className="text-lg font-semibold mb-2">Documentos já cadastrados</h4>
+        <div className="flex items-center justify-between mb-2">
+          <h4 className="text-lg font-semibold">Documentos já cadastrados</h4>
+          <input
+            type="text"
+            placeholder="Filtrar por título"
+            className="border rounded px-3 py-1 w-64"
+            value={searchTitle}
+            onChange={e => setSearchTitle(e.target.value)}
+          />
+        </div>
+
         <div className="overflow-x-auto rounded-lg shadow">
           <table className="w-full text-sm bg-gray-50">
             <thead>
               <tr>
-                <th className="p-2 text-left">Título</th>
-                <th className="p-2 text-left">Descrição</th>
-                <th className="p-2 text-left">Data de Envio</th>
-                <th className="p-2 text-left">Arquivo</th>
-                <th className="p-2 text-left">Excluir</th>
+                <th className="p-2 text-left cursor-pointer select-none" onClick={() => toggleSort("title")}>
+                  Título
+                  <Arrow active={sortKey === "title"} dir={sortDir} />
+                </th>
+                <th className="p-2 text-left cursor-pointer select-none" onClick={() => toggleSort("description")}>
+                  Descrição
+                  <Arrow active={sortKey === "description"} dir={sortDir} />
+                </th>
+                <th className="p-2 text-left cursor-pointer select-none" onClick={() => toggleSort("created_at")}>
+                  Data de Envio
+                  <Arrow active={sortKey === "created_at"} dir={sortDir} />
+                </th>
+                <th className="p-2 text-left cursor-pointer select-none" onClick={() => toggleSort("file_name")}>
+                  Arquivo
+                  <Arrow active={sortKey === "file_name"} dir={sortDir} />
+                </th>
+                <th className="p-2 text-center">Excluir</th>
               </tr>
             </thead>
             <tbody>
-              {docsToShow.map((doc) => (
+              {docsView.map((doc) => (
                 <tr key={doc.id}>
                   <td className="p-2">{doc.title}</td>
                   <td className="p-2">{doc.description}</td>
@@ -193,10 +270,10 @@ export default function UploadDocuments() {
                   </td>
                 </tr>
               ))}
-              {docsToShow.length === 0 && (
+              {docsView.length === 0 && (
                 <tr>
                   <td className="text-center text-gray-500 py-4" colSpan={5}>
-                    Nenhum documento cadastrado ainda.
+                    Nenhum documento {searchTitle ? "para esse filtro." : "cadastrado ainda."}
                   </td>
                 </tr>
               )}

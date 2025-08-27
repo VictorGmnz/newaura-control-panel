@@ -26,21 +26,26 @@ export default function FaqByRole({ roles = [], value = [], onChange }) {
   function addCargoBlock() {
     commit([...value, { _id: newBlockId(), role_id: "", qa: [{ id: newQaId(), q: "", a: "" }] }]);
   }
+
   function removeCargoBlock(blockId) {
     commit(value.filter(b => b._id !== blockId));
   }
+
   function updateRoleId(blockId, newId) {
     commit(value.map(b => (b._id === blockId ? { ...b, role_id: newId === "" ? "" : Number(newId) } : b)));
   }
+
   function addQA(blockId) {
     commit(value.map(b => (b._id === blockId ? { ...b, qa: [...b.qa, { id: newQaId(), q: "", a: "" }] } : b)));
   }
+
   function updateQA(blockId, qaId, field, val) {
     commit(value.map(b => {
       if (b._id !== blockId) return b;
       return { ...b, qa: b.qa.map(x => (x.id === qaId ? { ...x, [field]: val } : x)) };
     }));
   }
+
   function removeQA(blockId, qaId) {
     commit(value.map(b => (b._id === blockId ? { ...b, qa: b.qa.filter(x => x.id !== qaId) } : b)));
   }
@@ -69,13 +74,21 @@ export default function FaqByRole({ roles = [], value = [], onChange }) {
                 >
                   <option key="opt-default" value="">Selecione um cargo…</option>
                   {roles.map(r => (
-                    <option key={`opt-${r.id}`} value={r.id} disabled={alreadySelectedExceptMe.has(r.id)}>
+                    <option
+                      key={`opt-${r.id}`}
+                      value={r.id}
+                      disabled={alreadySelectedExceptMe.has(r.id)}
+                    >
                       {typeof r.access_level === "number" ? `${r.role} (Nível ${r.access_level})` : r.role}
                     </option>
                   ))}
                 </select>
               </div>
-              <button type="button" className="text-red-600 hover:text-red-700 text-sm" onClick={() => removeCargoBlock(block._id)}>
+              <button
+                type="button"
+                className="text-red-600 hover:text-red-700 text-sm"
+                onClick={() => removeCargoBlock(block._id)}
+              >
                 Remover cargo
               </button>
             </div>
@@ -110,7 +123,11 @@ export default function FaqByRole({ roles = [], value = [], onChange }) {
                   </div>
                 </div>
               ))}
-              <button type="button" className="text-primary hover:underline text-sm" onClick={() => addQA(block._id)}>
+              <button
+                type="button"
+                className="text-primary hover:underline text-sm"
+                onClick={() => addQA(block._id)}
+              >
                 + Adicionar Pergunta e Resposta.
               </button>
             </div>

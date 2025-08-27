@@ -92,7 +92,7 @@ export default function MessagesPage({ filters: filtersProp }) {
               const isActive = activeSessionIds.has(msg.session_id);
               return (
                 <tr key={i} className={i % 2 === 0 ? "bg-gray-50" : "bg-white"}>
-                  <td className="py-2 px-2 text-center font-mono border-r border-gray-200">{msg.user_phone}</td>
+                  <td className="py-2 px-2 text-center font-mono border-r border-gray-200">{msg.user_phone}</td><br />{msg.user_name && <span className="text-xs text-gray-500">{msg.user_name}</span>}
                   <td className="py-2 px-2 border-r border-gray-200">{msg.user_message}</td>
                   <td className="py-2 px-2 border-r border-gray-200">{msg.bot_response}</td>
                   <td className="py-2 px-2 text-center">{msg.created_at}</td>

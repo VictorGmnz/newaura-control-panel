@@ -9,33 +9,32 @@ import ReportsPage from "./pages/ReportsPage";
 import LoginPage from "./pages/LoginPage";
 import ConfigCompanyPage from "./pages/ConfigCompanyPage";
 import ConfigDocumentsPage from "./pages/ConfigDocumentsPage";
-import ConfigEmployeePage from "./pages/ConfigEmployeePage";
+import ConfigAdministrationPage from "./pages/ConfigAdministrationPage";
 import RealTimeMessagesPage from "./pages/RealTimeMessagesPage";
 import ConfigChatbotPage from "./pages/ConfigChatbotPage";
+import ConfigDocumentsEmployeesPage from "./pages/ConfigDocumentsEmployeesPage";
 import { useAuth } from "./utils/authData";
 
-const INACTIVITY_TIMEOUT = 30 * 60 * 1000; // 30 minutos em ms
+const INACTIVITY_TIMEOUT = 30 * 60 * 1000; // 30 min
 
-function ProtectedRoute({ isLogged, children }) {
-  return isLogged ? children : <Navigate to="/login" replace />;
+function ProtectedRoute({ children }) {
+  const { token } = useAuth();
+  const hasToken =
+    !!token || !!(typeof window !== "undefined" && localStorage.getItem("token"));
+  return hasToken ? children : <Navigate to="/login" replace />;
 }
-function RedirectRoute({ isLogged, children }) {
-  return isLogged ? <Navigate to="/" replace /> : children;
+function RedirectRoute({ children }) {
+  const { token } = useAuth();
+  const hasToken =
+    !!token || !!(typeof window !== "undefined" && localStorage.getItem("token"));
+  return hasToken ? <Navigate to="/" replace /> : children;
 }
 
 export default function App() {
-  const { token, logout } = useAuth();
+  const { logout } = useAuth();
   const timer = useRef(null);
 
   useEffect(() => {
-    if (localStorage.getItem("token")) {
-      localStorage.removeItem("token");
-      localStorage.removeItem("user");
-    }
-  }, []);
-
-  useEffect(() => {
-    if (!token) return;
     function resetTimer() {
       clearTimeout(timer.current);
       timer.current = setTimeout(() => {
@@ -54,14 +53,14 @@ export default function App() {
       window.removeEventListener("keydown", resetTimer);
       window.removeEventListener("click", resetTimer);
     };
-  }, [token, logout]);
+  }, [logout]);
 
   return (
     <Routes>
       <Route
         path="/login"
         element={
-          <RedirectRoute isLogged={!!token}>
+          <RedirectRoute>
             <LoginPage />
           </RedirectRoute>
         }
@@ -69,7 +68,7 @@ export default function App() {
       <Route
         path="/*"
         element={
-          <ProtectedRoute isLogged={!!token}>
+          <ProtectedRoute>
             <>
               <Header />
               <div className="md:ml-56 ml-20 pt-24 px-4 md:px-2 pb-8 bg-gray-100 min-h-screen">
@@ -81,10 +80,16 @@ export default function App() {
                     <Route path="/conversas-ativas" element={<RealTimeMessagesPage />} />
                     <Route path="/feedbacks" element={<FeedbacksPage />} />
                     <Route path="/relatorios" element={<ReportsPage />} />
-                    {/* Rotas de Configuração (submenus): */}
+                    {/* Configurações */}
                     <Route path="/configuracoes/empresa" element={<ConfigCompanyPage />} />
+                    {/* Clientes → UploadDocuments apenas */}
                     <Route path="/configuracoes/documentos" element={<ConfigDocumentsPage />} />
-                    <Route path="/configuracoes/administração" element={<ConfigEmployeePage />} />
+                    {/* Setor específico → upload + listagem */}
+                    <Route
+                      path="/configuracoes/documentos/setor/:roleId"
+                      element={<ConfigDocumentsEmployeesPage />}
+                    />
+                    <Route path="/configuracoes/administração" element={<ConfigAdministrationPage />}/>
                     <Route path="/configuracoes/chatbot" element={<ConfigChatbotPage />} />
                     <Route path="*" element={<Navigate to="/" />} />
                   </Routes>

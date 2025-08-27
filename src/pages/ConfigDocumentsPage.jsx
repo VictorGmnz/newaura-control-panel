@@ -1,13 +1,18 @@
-import React from "react";
+import React, { useEffect, useRef } from "react";
 import UploadDocuments from "../components/UploadDocuments";
-import UploadEmployeeDocuments from "../components/UploadEmployeeDocuments";
 
-export default function ConfigDocumentsPage() {
+export default function ConfigDocumentsPage({ section }) {
+  const colabRef = useRef(null);
+
+  useEffect(() => {
+    if (section === "colaboradores" && colabRef.current) {
+      colabRef.current.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+  }, [section]);
+
   return (
-    <div className="p-6 max-w-6xl mx-auto">
-      <h2 className="text-2xl font-bold mb-6 text-center">Configuração de Documentos</h2>
+    <div className="space-y-10">
       <UploadDocuments />
-      <UploadEmployeeDocuments />
     </div>
   );
 }
