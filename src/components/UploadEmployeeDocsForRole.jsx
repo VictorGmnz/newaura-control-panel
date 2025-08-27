@@ -432,9 +432,6 @@ export default function UploadEmployeeDocsForRole() {
                     onChange={e => setRoleSearch(e.target.value)}
                     disabled={uploading}
                   />
-                  <button type="button" onClick={selectAllFiltered} className="text-xs bg-gray-100 hover:bg-gray-200 px-2 py-1 rounded" disabled={uploading}>
-                    Selecionar todos
-                  </button>
                   <button type="button" onClick={clearSelection} className="text-xs font-bold text-primary hover:bg-gray-200 px-2 py-1 rounded" disabled={uploading}>
                     Limpar
                   </button>
