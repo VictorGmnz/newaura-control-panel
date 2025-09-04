@@ -1,14 +1,20 @@
-// DateFilters.jsx
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 
-export default function DateFilters({ onApply, initialStart, initialEnd, initialPhone }) {
-  const [start, setStart] = useState(initialStart || "");
-  const [end, setEnd] = useState(initialEnd || "");
-  const [phone, setPhone] = useState(initialPhone || "");
+export default function DateFilters({ value, onApply, includePhone = true }) {
+  const [start, setStart] = useState(value?.start || "");
+  const [end, setEnd] = useState(value?.end || "");
+  const [phone, setPhone] = useState(value?.phone || "");
+
+  useEffect(() => {
+    setStart(value?.start || "");
+    setEnd(value?.end || "");
+    setPhone(value?.phone || "");
+  }, [value?.start, value?.end, value?.phone]);
 
   function handleSubmit(e) {
     e.preventDefault();
-    onApply({ start, end, phone });
+    const payload = includePhone ? { start, end, phone } : { start, end };
+    onApply?.(payload);
   }
 
   return (
@@ -18,7 +24,7 @@ export default function DateFilters({ onApply, initialStart, initialEnd, initial
         <input
           type="date"
           value={start}
-          onChange={e => setStart(e.target.value)}
+          onChange={(e) => setStart(e.target.value)}
           className="border rounded px-2 py-1"
         />
       </div>
@@ -27,21 +33,28 @@ export default function DateFilters({ onApply, initialStart, initialEnd, initial
         <input
           type="date"
           value={end}
-          onChange={e => setEnd(e.target.value)}
+          onChange={(e) => setEnd(e.target.value)}
           className="border rounded px-2 py-1"
         />
       </div>
-      <div>
-        <label className="block text-xs mb-1">Telefone:</label>
-        <input
-          type="text"
-          placeholder="DDD + Número "
-          value={phone}
-          onChange={e => setPhone(e.target.value)}
-          className="border rounded px-2 py-1"
-        />
-      </div>
-      <button type="submit" className="bg-primary text-white px-4 py-2 rounded-lg shadow hover:bg-purple-700 transition self-end">
+
+      {includePhone && (
+        <div>
+          <label className="block text-xs mb-1">Telefone:</label>
+          <input
+            type="text"
+            placeholder="DDD + Número "
+            value={phone}
+            onChange={(e) => setPhone(e.target.value)}
+            className="border rounded px-2 py-1"
+          />
+        </div>
+      )}
+
+      <button
+        type="submit"
+        className="bg-primary text-white px-2 py-2 rounded-lg shadow hover:bg-purple-700 transition self-end"
+      >
         Aplicar
       </button>
     </form>

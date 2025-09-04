@@ -13,11 +13,7 @@ function normalizeAllowedPages(user) {
 
 function Arrow({ active, dir }) {
   const cls = active ? "opacity-100" : "opacity-30";
-  return (
-    <span className={`ml-1 text-xs ${cls}`}>
-      {dir === "asc" ? "▲" : "▼"}
-    </span>
-  );
+  return <span className={`ml-1 text-xs ${cls}`}>{dir === "asc" ? "▲" : "▼"}</span>;
 }
 
 function toTimestamp(dateStr) {
@@ -38,6 +34,32 @@ function toTimestamp(dateStr) {
   return Number.isNaN(t) ? 0 : t;
 }
 
+function dedupeDocuments(list) {
+  const map = new Map();
+  for (const d of list || []) {
+    const key = d.file_name || `${d.title || ""}|${d.created_at || ""}`;
+    if (!map.has(key)) map.set(key, []);
+    map.get(key).push(d);
+  }
+  const rows = [];
+  for (const [, arr] of map.entries()) {
+    arr.sort((a, b) => {
+      const ta = toTimestamp(a.created_at);
+      const tb = toTimestamp(b.created_at);
+      if (tb !== ta) return tb - ta;
+      return (b.id || 0) - (a.id || 0);
+    });
+    rows.push(arr[0]);
+  }
+  rows.sort((a, b) => {
+    const ta = toTimestamp(a.created_at);
+    const tb = toTimestamp(b.created_at);
+    if (tb !== ta) return tb - ta;
+    return (b.id || 0) - (a.id || 0);
+  });
+  return rows;
+}
+
 export default function UploadEmployeeDocsForRole() {
   const { user } = useAuth();
   const { roleId } = useParams();
@@ -45,6 +67,7 @@ export default function UploadEmployeeDocsForRole() {
 
   const allowed = useMemo(() => normalizeAllowedPages(user), [user]);
   const allPages = useMemo(() => new Set(allowed).has("all_pages"), [allowed]);
+  const isAdminOwnSector = allPages && Number(user?.role_id) === numericRoleId;
 
   const [docs, setDocs] = useState([]);
   const [msg, setMsg] = useState("");
@@ -71,14 +94,22 @@ export default function UploadEmployeeDocsForRole() {
   const [expandedDocs, setExpandedDocs] = useState({});
   const toggleDocRoles = (id) => setExpandedDocs(prev => ({ ...prev, [id]: !prev[id] }));
 
+  const [roleFilterId, setRoleFilterId] = useState("");
+
+  const currentRoleName = useMemo(() => {
+    const fromList = roles.find(r => Number(r.id) === numericRoleId)?.role;
+    if (fromList) return fromList;
+    if (Number(user?.role_id) === numericRoleId) return user?.role || user?.role_name || "";
+    return "";
+  }, [roles, numericRoleId, user]);
+
   useEffect(() => {
     fetchDocs();
   }, [roleId]);
 
   useEffect(() => {
-    if (!allPages) return;
     fetchCompanyRoles();
-  }, [allPages]);
+  }, [roleId]);
 
   useEffect(() => {
     if (!allPages) return;
@@ -87,14 +118,34 @@ export default function UploadEmployeeDocsForRole() {
     });
   }, [docs, allPages]);
 
+  useEffect(() => {
+    setSelectedRoleIds([]);
+    setRoleSearch("");
+    setApplyToAll(false);
+    setMsg("");
+    setError("");
+    setTitle("");
+    setDescription("");
+    setRolesByDoc({});
+    setRoleFilterId("");
+    if (fileInputRef.current) fileInputRef.current.value = "";
+    setFile(null);
+  }, [roleId]);
+
   async function fetchDocs() {
     try {
       setError("");
-      const res = await authFetch(
-        `${API_URL}/company/roles/${numericRoleId}/documents?company_id=${user.company_id}&is_employee_doc=true`
-      );
+      let url;
+      if (isAdminOwnSector) {
+        url = `${API_URL}/company/documents?company_id=${user.company_id}&is_employee_doc=true`;
+      } else {
+        url = `${API_URL}/company/roles/${numericRoleId}/documents?company_id=${user.company_id}&is_employee_doc=true`;
+      }
+      const res = await authFetch(url);
       const data = await res.json();
-      setDocs(Array.isArray(data?.documents) ? data.documents : []);
+      const raw = Array.isArray(data?.documents) ? data.documents : [];
+      const deduped = dedupeDocuments(raw);
+      setDocs(deduped);
     } catch {
       setDocs([]);
       setError("Erro ao listar documentos do setor.");
@@ -206,11 +257,14 @@ export default function UploadEmployeeDocsForRole() {
       let roleIdsToSend = [];
       if (!applyToAll) {
         if (allPages) {
-          roleIdsToSend = selectedRoleIds.length > 0 ? selectedRoleIds.slice() : [numericRoleId];
+          roleIdsToSend = selectedRoleIds.length > 0
+            ? selectedRoleIds.slice()
+            : [numericRoleId];
         } else {
           roleIdsToSend = [numericRoleId];
         }
       }
+
       const formData = new FormData();
       formData.append("company_id", user.company_id);
       formData.append("title", title);
@@ -253,10 +307,25 @@ export default function UploadEmployeeDocsForRole() {
   }
 
   const docsFiltered = useMemo(() => {
+    let arr = docs;
     const q = searchTitle.trim().toLowerCase();
-    if (!q) return docs;
-    return docs.filter(d => (d.title || "").toLowerCase().includes(q));
-  }, [searchTitle, docs]);
+    if (q) {
+      arr = arr.filter(d => (d.title || "").toLowerCase().includes(q));
+    }
+
+    if (isAdminOwnSector && roleFilterId) {
+      const rId = Number(roleFilterId);
+      arr = arr.filter(d => {
+        const entry = rolesByDoc[d.id];
+        if (!entry || entry.loading) return false;
+        if (entry.roles === null) return false;
+        const rs = entry.roles || [];
+        if (rs.length === 0) return false;
+        return rs.some(r => Number(r.role_id) === rId);
+      });
+    }
+    return arr;
+  }, [docs, searchTitle, isAdminOwnSector, roleFilterId, rolesByDoc]);
 
   const docsView = useMemo(() => {
     const arr = docsFiltered.slice();
@@ -356,18 +425,20 @@ export default function UploadEmployeeDocsForRole() {
 
   return (
     <div className="bg-white rounded-xl shadow p-6 mt-12 max-w-6xl mx-auto">
-      <h3 className="text-xl font-bold text-primary mb-2">📄 Documentos do Setor</h3>
+      <h3 className="text-xl font-bold text-primary mb-2">
+        📄 Documentos — Setor {currentRoleName || ""}
+      </h3>
       <p className="text-gray-500 mb-4">
-        Os documentos inseridos aqui serão utilizados exclusivamente para o Chatbot responder seus colaboradores (ex.: agendas, instruções de trabalhos, manuais, etc.).
+        Os documentos inseridos aqui serão utilizados exclusivamente para o Chatbot responder os colaboradores do Setor <strong>{currentRoleName || ""}</strong><br />
+        (ex.: agendas, instruções de trabalhos, manuais, etc.).
       </p>
-      <p className="text-yellow-600 mb-4">
+      <p className="text-yellow-600 mb-4 font-bold">
         Envie arquivos PDF, DOCX ou XLSX (máx. 10MB). Prefira arquivos objetivos e bem estruturados.
       </p>
 
       {msg && <div className="mb-4 p-2 bg-green-100 text-green-700 rounded">{msg}</div>}
       {error && <div className="mb-4 p-2 bg-red-100 text-red-700 rounded">{error}</div>}
 
-      {/* Upload */}
       <form onSubmit={handleSubmit} className="flex flex-col gap-4">
         <input
           ref={fileInputRef}
@@ -399,10 +470,9 @@ export default function UploadEmployeeDocsForRole() {
           disabled={uploading}
         />
 
-        {/* Admin: disponibilizar para todos */}
         {allPages && (
           <div className={`border bg-gray-100 rounded-lg p-3 ${uploading ? "opacity-60 pointer-events-none" : ""}`}>
-            <h3 className="text-xl font-bold text-primary">Opção Exclusiva para Administradores</h3><br />
+            <h3 className="text-xl font-bold text-primary">Área do Administrador</h3><br />
             <label className="flex items-center gap-2">
               <input
                 type="checkbox"
@@ -418,7 +488,7 @@ export default function UploadEmployeeDocsForRole() {
               <>
                 <div className="flex items-center justify-between gap-2 mt-3">
                   <label className="text-sm font-medium">
-                    Setores específicos (opcional) — se nenhum setor for selecionado, o documento será vinculado ao setor atual.
+                    Setores específicos (opcional){!isAdminOwnSector && <> — se nenhum setor for selecionado, o documento será vinculado ao setor atual (<strong>{currentRoleName || ""}</strong>).</>}
                   </label>
                   <span className="text-xs text-gray-500">Selecionados: {selectedRoleIds.length}</span>
                 </div>
@@ -432,7 +502,12 @@ export default function UploadEmployeeDocsForRole() {
                     onChange={e => setRoleSearch(e.target.value)}
                     disabled={uploading}
                   />
-                  <button type="button" onClick={clearSelection} className="text-xs font-bold text-primary hover:bg-gray-200 px-2 py-1 rounded" disabled={uploading}>
+                  <button
+                    type="button"
+                    onClick={clearSelection}
+                    className="text-xs font-bold text-primary hover:bg-gray-200 px-2 py-1 rounded"
+                    disabled={uploading}
+                  >
                     Limpar
                   </button>
                 </div>
@@ -485,17 +560,35 @@ export default function UploadEmployeeDocsForRole() {
         </button>
       </form>
 
-      {/* Busca + listagem */}
       <div className="mt-8">
-        <div className="flex items-center justify-between mb-2">
-          <h4 className="text-lg font-semibold">Documentos já cadastrados</h4>
-          <input
-            type="text"
-            placeholder="Filtrar por título"
-            className="border rounded px-3 py-1 w-64"
-            value={searchTitle}
-            onChange={e => setSearchTitle(e.target.value)}
-          />
+        <div className="flex items-center justify-between mb-2 gap-2">
+          <h4 className="text-lg font-semibold">
+            Listagem de Documentos
+          </h4>
+          <div className="flex items-center gap-2">
+            {isAdminOwnSector && (
+              <select
+                className="border rounded px-3 py-1"
+                value={roleFilterId}
+                onChange={e => setRoleFilterId(e.target.value)}
+                title="Filtrar por cargo"
+              >
+                <option value="">Todos os cargos</option>
+                {roles.map(r => (
+                  <option key={r.id} value={r.id}>
+                    {r.role}{Number.isFinite(r.access_level) ? ` · Nível ${r.access_level}` : ""}
+                  </option>
+                ))}
+              </select>
+            )}
+            <input
+              type="text"
+              placeholder="Filtrar por título"
+              className="border rounded px-3 py-1 w-64"
+              value={searchTitle}
+              onChange={e => setSearchTitle(e.target.value)}
+            />
+          </div>
         </div>
 
         <div className="overflow-x-auto rounded-lg shadow">
@@ -529,11 +622,7 @@ export default function UploadEmployeeDocsForRole() {
                   <td className="p-2">{doc.description}</td>
                   <td className="p-2">{doc.created_at || "-"}</td>
                   <td className="p-2">{doc.file_name || "-"}</td>
-                  {allPages && (
-                    <td className="p-2">
-                      {renderDocRolesCell(doc.id)}
-                    </td>
-                  )}
+                  {allPages && <td className="p-2">{renderDocRolesCell(doc.id)}</td>}
                   <td className="p-2 text-center">
                     <button
                       className="text-red-500 hover:text-red-700"

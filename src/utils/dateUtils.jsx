@@ -1,6 +1,6 @@
 export function getDefaultFilters() {
   const now = new Date();
-  now.setDate(now.getDate() + 1);
+  now.setDate(now.getDate());
   
   const start = new Date(now);
   start.setMonth(start.getMonth() - 1);
