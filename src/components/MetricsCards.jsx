@@ -4,7 +4,7 @@ export default function MetricsCards({ metrics }) {
   const items = Array.isArray(metrics)
     ? metrics
     : [
-        { label: "Interações totais", value: metrics?.totalMessages ?? 0 },
+        { label: "Mensagens totais", value: metrics?.totalMessages ?? 0 },
         { label: "Contatos únicos", value: metrics?.uniqueContacts ?? 0 },
         { label: "Feedbacks recebidos", value: metrics?.totalFeedbacks ?? 0 },
         { label: "Feedback positivo (%)", value: metrics?.feedbackRating ?? 0 },

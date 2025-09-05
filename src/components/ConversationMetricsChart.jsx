@@ -104,10 +104,10 @@ export default function ConversationMetricsChart({ data = [] }) {
             Total de Conversas no Período: {totals.convs}
           </span>
           <span className="px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700">
-            Total de Interações no Período: {totals.inter}
+            Total de Mensagens no Período: {totals.inter}
           </span>
           <span className="px-2 py-0.5 rounded-full bg-gray-100 text-gray-700">
-            Média de Interações por Conversa: {totals.ipc}
+            Média de Mensagens por Conversa: {totals.ipc}
           </span>
         </div>
       </div>
@@ -209,10 +209,10 @@ export default function ConversationMetricsChart({ data = [] }) {
           <div className="font-semibold">
             {parsed[hover.i].date || parsed[hover.i].dateRaw}
           </div>
-          <div>Interações: {parsed[hover.i].interactions}</div>
+          <div>Mensagens: {parsed[hover.i].interactions}</div>
           <div>Conversas: {parsed[hover.i].conversations}</div>
           <div>
-            Média de Interações por Conversa:{" "}
+            Média de Mensagens por Conversa:{" "}
             {parsed[hover.i].conversations > 0
               ? (parsed[hover.i].interactions / parsed[hover.i].conversations).toFixed(1)
               : "0.0"}
@@ -223,11 +223,11 @@ export default function ConversationMetricsChart({ data = [] }) {
       <div className="mt-3 flex gap-4 text-xs">
         <div className="flex items-center gap-2">
           <span className="inline-block w-3 h-3 rounded bg-[#10b981]" />
-          <span>Interações/dia</span>
+          <span>Mensagens por dia</span>
         </div>
         <div className="flex items-center gap-2">
           <span className="inline-block w-3 h-3 rounded bg-[#5A2EBB]" />
-          <span>Conversas/dia</span>
+          <span>Conversas por dia</span>
         </div>
       </div>
     </div>

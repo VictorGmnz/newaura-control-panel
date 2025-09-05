@@ -107,8 +107,8 @@ export default function Dashboard({ filters: filtersProp }) {
 
     return [
       { label: "Conversas totais", value: totalConversations },
-      { label: "Interações totais", value: totalInteractions },
-      { label: "Média de Interações por Conversa", value: ipc.toFixed(1) },
+      { label: "Mensagens totais", value: totalInteractions },
+      { label: "Média de Mensagens por Conversa", value: ipc.toFixed(1) },
       { label: "Contatos totais", value: uniqueContacts },
       { label: "Feedbacks totais ", value: feedbackTotal },
       { label: "Feedbacks Positivos totais (%) ", value: feedbackPct.toFixed(2) },
