@@ -9,7 +9,6 @@ import {
   FaFile,
   FaBuilding,
   FaUsers,
-  FaBolt,
   FaRobot,
   FaSignOutAlt,
 } from "react-icons/fa";
@@ -20,8 +19,7 @@ const API_URL = import.meta.env.VITE_API_URL;
 
 const NAV_ITEMS = [
   { label: "Dashboard", icon: <FaChartLine />, to: "/", perm: "dashboard" },
-  { label: "Conversas", icon: <FaComments />, to: "/mensagens", perm: "messages" },
-  { label: "Conversas Ativas", icon: <FaBolt />, to: "/conversas-ativas", perm: "active_conversations" },
+  { label: "Conversas", icon: <FaComments />, to: "/conversas-ativas", perm: "active_conversations" },
   { label: "Feedbacks", icon: <FaStar />, to: "/feedbacks", perm: "reports" },
   { label: "Relatórios", icon: <FaChartBar />, to: "/relatorios", perm: "reports" },
 ];

@@ -77,7 +77,6 @@ export default function Dashboard({ filters: filtersProp }) {
   }, [filters.start, filters.end]);
 
   const cards = useMemo(() => {
-    console.log(summary)
     const totalInteractions =
       Number(summary?.total_interactions ?? summary?.total_messages ?? 0);
 

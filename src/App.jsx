@@ -3,7 +3,6 @@ import { Routes, Route, Navigate } from "react-router-dom";
 import Sidebar from "./components/Sidebar";
 import Header from "./components/Header";
 import Dashboard from "./pages/Dashboard";
-import MessagesPage from "./pages/MessagesPage";
 import FeedbacksPage from "./pages/FeedbacksPage";
 import ReportsPage from "./pages/ReportsPage";
 import LoginPage from "./pages/LoginPage";
@@ -76,7 +75,6 @@ export default function App() {
                 <main className="flex-1 bg-gray-100 min-h-screen pt-4 px-4 md:px-2 pb-8">
                   <Routes>
                     <Route path="/" element={<Dashboard />} />
-                    <Route path="/mensagens" element={<MessagesPage />} />
                     <Route path="/conversas-ativas" element={<RealTimeMessagesPage />} />
                     <Route path="/feedbacks" element={<FeedbacksPage />} />
                     <Route path="/relatorios" element={<ReportsPage />} />

@@ -25,9 +25,9 @@ export default function UsageLimits({ usage, authors, range }) {
 
   const cards = useMemo(
     () => [
-      { label: "Limite de Interações", value: uLimit },
-      { label: "Interações", value: uUsed },
-      { label: "Interações Restantes", value: uRem },
+      { label: "Limite de Interações com a IA", value: uLimit },
+      { label: "Interações com a IA", value: uUsed },
+      { label: "Interações Restantes com a IA", value: uRem },
     ],
     [uLimit, uUsed, uRem]
   );
@@ -76,7 +76,7 @@ export default function UsageLimits({ usage, authors, range }) {
 
   return (
     <div className="bg-white shadow rounded-xl p-4 h-full flex flex-col gap-4">
-      <h3 className="font-bold text-lg">Interações - {currentMonth}</h3>
+      <h3 className="font-bold text-lg">Interações da IA - {currentMonth}</h3>
 
       {/* Donut de consumo com cores por threshold */}
       <div className="flex items-center gap-4">
