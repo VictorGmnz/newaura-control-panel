@@ -27,10 +27,14 @@ export default function UploadEmployeeDocuments() {
   const [rolesByDoc, setRolesByDoc] = useState({});
   const fileInputRef = useRef(null);
 
-  const canAccess =
-    Array.isArray(user?.allowed_pages)
-      ? (user.allowed_pages.includes("config_documents") || user.allowed_pages.includes("config_root"))
-      : true;
+const canAccess =
+  Array.isArray(user?.allowed_pages)
+    ? (
+        user.allowed_pages.includes("config_documents") ||
+        user.allowed_pages.includes("config_root") ||
+        user.allowed_pages.includes("all_pages")
+      )
+    : true;
 
   useEffect(() => {
     if (!canAccess) return;

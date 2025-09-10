@@ -1,15 +1,15 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { authFetch } from "../utils/authFetch";
 import { useAuth } from "../utils/authData";
-import { FaEye, FaEyeSlash } from "react-icons/fa";
+import { FaEye, FaEyeSlash, FaSort, FaSortUp, FaSortDown } from "react-icons/fa";
 
 const API_URL = import.meta.env.VITE_API_URL;
 
 const PERMISSION_OPTIONS = [
-  { key: "dashboard", label: "Dashboard" },
-  { key: "messages", label: "Conversas" },
-  { key: "active_conversations", label: "Conversas Ativas" },
-  { key: "reports", label: "Tela de Relatórios" },
+  { key: "dashboard", label: "Página de Dashboards" },
+  { key: "messages", label: "Página de Conversas" },
+  { key: "feedback", label: "Página de Feedbacks" },
+  { key: "reports", label: "Página de Relatórios" },
   { key: "config_company", label: "Configuração da Empresa" },
   { key: "config_documents", label: "Configuração de Documentos" },
   { key: "config_chatbot", label: "Configuração do Chatbot" },
@@ -52,11 +52,35 @@ export default function ConfigAdministrationPage() {
   const [levelsLoading, setLevelsLoading] = useState(false);
   const [levelMsg, setLevelMsg] = useState("");
   const [levelErr, setLevelErr] = useState("");
+
   const [permModalOpen, setPermModalOpen] = useState(false);
   const [permModalErr, setPermModalErr] = useState("");
   const [permModalLevelInput, setPermModalLevelInput] = useState("");
   const [permModalPerms, setPermModalPerms] = useState(EMPTY_PERMS);
   const [editingLevel, setEditingLevel] = useState(null);
+
+  // --- ORDENACAO ---
+  const [colabSort, setColabSort] = useState({ key: "nome", dir: "asc" });
+  const [roleSort, setRoleSort]   = useState({ key: "access_level", dir: "asc" });
+
+  const toggleColabSort = (key) =>
+    setColabSort(s => (s.key === key ? { key, dir: s.dir === "asc" ? "desc" : "asc" } : { key, dir: "asc" }));
+
+  const toggleRoleSort = (key) =>
+    setRoleSort(s => (s.key === key ? { key, dir: s.dir === "asc" ? "desc" : "asc" } : { key, dir: "asc" }));
+
+  const sortIcon = (state, key) => {
+    if (state.key !== key) return <FaSort className="inline-block ml-1 opacity-60" />;
+    return state.dir === "asc" ? <FaSortUp className="inline-block ml-1" /> : <FaSortDown className="inline-block ml-1" />;
+  };
+
+  // --- FILTROS ---
+  const [roleFilter, setRoleFilter]   = useState("");
+  const [levelFilter, setLevelFilter] = useState("");
+
+  const [colabFilterName, setColabFilterName] = useState("");
+  const [colabFilterEmail, setColabFilterEmail] = useState("");
+  const [colabFilterRole, setColabFilterRole] = useState("");
 
   useEffect(() => {
     fetchColabs();
@@ -86,6 +110,85 @@ export default function ConfigAdministrationPage() {
     if (colab.role) return colab.role;
     return "—";
   };
+
+  // Accessors para ordenação
+  const colabAccessors = {
+    nome:     c => (c.nome || c.employee || "").toLowerCase(),
+    email:    c => (c.email || "").toLowerCase(),
+    username: c => (c.username || "").toLowerCase(),
+    role:     c => (roleLabel(c) || "").toLowerCase(),
+    status:   c => (c.status ? 1 : 0),
+  };
+
+  const rolesAccessors = {
+    role:          r => (r.role || "").toLowerCase(),
+    access_level:  r => Number.isFinite(r.access_level) ? r.access_level : Number.POSITIVE_INFINITY,
+    status:        r => (r.status ? 1 : 0),
+  };
+
+  // --- LISTAS FILTRADAS ---
+  const colabsFiltered = useMemo(() => {
+    const qn = colabFilterName.trim().toLowerCase();
+    const qe = colabFilterEmail.trim().toLowerCase();
+    const qr = colabFilterRole.trim().toLowerCase();
+    return colabs.filter(c => {
+      const nome = (c.nome || c.employee || "").toLowerCase();
+      const email = (c.email || "").toLowerCase();
+      const cargo = (roleLabel(c) || "").toLowerCase();
+      return (!qn || nome.includes(qn)) &&
+            (!qe || email.includes(qe)) &&
+            (!qr || cargo.includes(qr));
+    });
+  }, [colabs, colabFilterName, colabFilterEmail, colabFilterRole, rolesById]);
+
+  const rolesFiltered = useMemo(() => {
+    const q = (roleFilter || "").trim().toLowerCase();
+    if (!q) return roles;
+    return roles.filter(r => {
+      const cargo = (r.role || "").toLowerCase();
+      const nivelStr = Number.isFinite(r.access_level) ? String(r.access_level) : "";
+      return cargo.includes(q) || nivelStr.includes(q);
+    });
+  }, [roles, roleFilter]);
+
+  const levelsFiltered = useMemo(() => {
+    const q = (levelFilter || "").trim().toLowerCase();
+    if (!q) return levels;
+    return levels.filter(l => {
+      const nivelStr = Number.isFinite(l.access_level) ? String(l.access_level) : "";
+      return nivelStr.includes(q);
+    });
+  }, [levels, levelFilter]);
+
+  // --- LISTAS ORDENADAS (sobre as filtradas) ---
+  const colabsView = useMemo(() => {
+    const { key, dir } = colabSort;
+    const acc = colabAccessors[key];
+    if (!acc) return colabsFiltered;
+    const arr = [...colabsFiltered];
+    arr.sort((a, b) => {
+      const va = acc(a), vb = acc(b);
+      if (typeof va === "number" && typeof vb === "number") return dir === "asc" ? va - vb : vb - va;
+      if (va > vb) return dir === "asc" ? 1 : -1;
+      if (va < vb) return dir === "asc" ? -1 : 1;
+      return 0;
+    });
+    return arr;
+  }, [colabsFiltered, colabSort, rolesById]);
+
+  const rolesView = useMemo(() => {
+    const { key, dir } = roleSort;
+    const acc = rolesAccessors[key] || rolesAccessors.access_level;
+    const arr = [...rolesFiltered];
+    arr.sort((a, b) => {
+      const va = acc(a), vb = acc(b);
+      if (typeof va === "number" && typeof vb === "number") return dir === "asc" ? va - vb : vb - va;
+      if (va > vb) return dir === "asc" ? 1 : -1;
+      if (va < vb) return dir === "asc" ? -1 : 1;
+      return 0;
+    });
+    return arr;
+  }, [rolesFiltered, roleSort]);
 
   function fetchColabs() {
     setLoading(true);
@@ -443,13 +546,38 @@ export default function ConfigAdministrationPage() {
   return (
     <div className="p-6 max-w-6xl mx-auto">
       <h2 className="text-2xl font-bold mb-4 text-center">Gestão de Colaboradores</h2>
+      <div className="mb-4 flex items-center gap-3 justify-between">
+        <button
+          onClick={() => openModal()}
+          className="bg-primary text-white px-6 py-2 rounded-lg font-bold shadow hover:bg-purple-700 transition"
+        >
+          Novo Colaborador
+        </button>
 
-      <button
-        onClick={() => openModal()}
-        className="mb-6 bg-primary text-white px-6 py-2 rounded-lg font-bold shadow hover:bg-purple-700 transition"
-      >
-        Novo Colaborador
-      </button>
+        <div className="flex w-full max-w-2xl gap-2">
+          <input
+            type="search"
+            value={colabFilterName}
+            onChange={e => setColabFilterName(e.target.value)}
+            placeholder="Filtrar por nome"
+            className="input flex-1"
+          />
+          <input
+            type="search"
+            value={colabFilterEmail}
+            onChange={e => setColabFilterEmail(e.target.value)}
+            placeholder="Filtrar por e-mail"
+            className="input flex-1"
+          />
+          <input
+            type="search"
+            value={colabFilterRole}
+            onChange={e => setColabFilterRole(e.target.value)}
+            placeholder="Filtrar por cargo"
+            className="input flex-1"
+          />
+        </div>
+      </div>
 
       {success && <div className="mb-4 p-2 bg-green-100 text-green-700 rounded">{success}</div>}
       {error && <div className="mb-4 p-2 bg-red-100 text-red-700 rounded">{error}</div>}
@@ -457,19 +585,29 @@ export default function ConfigAdministrationPage() {
       <table className="w-full bg-white rounded-xl shadow text-sm overflow-hidden">
         <thead>
           <tr className="bg-[#5A2EBB] text-white">
-            <th className="py-3 px-2 text-left">Nome</th>
-            <th className="py-3 px-2 text-left">E-mail</th>
-            <th className="py-3 px-2 text-left">Usuário</th>
-            <th className="py-3 px-2 text-center">Cargo</th>
-            <th className="py-3 px-2 text-center">Status</th>
+            <th className="py-3 px-2 text-left cursor-pointer select-none" onClick={() => toggleColabSort("nome")}>
+              Nome {sortIcon(colabSort, "nome")}
+            </th>
+            <th className="py-3 px-2 text-left cursor-pointer select-none" onClick={() => toggleColabSort("email")}>
+              E-mail {sortIcon(colabSort, "email")}
+            </th>
+            <th className="py-3 px-2 text-left cursor-pointer select-none" onClick={() => toggleColabSort("username")}>
+              Usuário {sortIcon(colabSort, "username")}
+            </th>
+            <th className="py-3 px-2 text-center cursor-pointer select-none" onClick={() => toggleColabSort("role")}>
+              Cargo {sortIcon(colabSort, "role")}
+            </th>
+            <th className="py-3 px-2 text-center cursor-pointer select-none" onClick={() => toggleColabSort("status")}>
+              Status {sortIcon(colabSort, "status")}
+            </th>
             <th className="py-3 px-2 text-center">Ações</th>
           </tr>
         </thead>
         <tbody>
           {loading ? (
             <tr><td colSpan={6} className="py-8 text-center text-gray-500">Carregando…</td></tr>
-          ) : colabs.length > 0 ? (
-            colabs.map(colab => (
+          ) : colabsView.length > 0 ? (
+            colabsView.map(colab => (
               <tr key={colab.id} className="border-t">
                 <td className="py-2 px-2">{colab.nome || colab.employee}</td>
                 <td className="py-2 px-2">{colab.email}</td>
@@ -491,20 +629,29 @@ export default function ConfigAdministrationPage() {
               </tr>
             ))
           ) : (
-            <tr><td colSpan={6} className="py-8 text-center text-gray-500">Nenhum colaborador cadastrado.</td></tr>
+            <tr><td colSpan={6} className="py-8 text-center text-gray-500">Nenhum colaborador encontrado.</td></tr>
           )}
         </tbody>
       </table>
 
       <div className="mt-12">
         <h2 className="text-2xl font-bold mb-4 text-center">Gestão de Cargos</h2>
-        <div className="flex items-center justify-between mb-4">
+
+        {/* Barra de ações + filtro (Cargos) */}
+        <div className="flex items-center justify-between mb-4 gap-3">
           <button
             onClick={() => openRoleModal()}
             className="bg-primary text-white px-4 py-2 rounded-lg font-bold shadow hover:bg-purple-700 transition"
           >
             Novo Cargo
           </button>
+          <input
+            type="search"
+            value={roleFilter}
+            onChange={e => setRoleFilter(e.target.value)}
+            placeholder="Filtrar por cargo ou nível de acesso"
+            className="input w-full max-w-md"
+          />
         </div>
 
         {roleMsg && <div className="mb-4 p-2 bg-green-100 text-green-700 rounded">{roleMsg}</div>}
@@ -514,17 +661,23 @@ export default function ConfigAdministrationPage() {
           <table className="w-full text-sm">
             <thead>
               <tr className="bg-[#5A2EBB] text-white">
-                <th className="p-2 text-center">Cargo</th>
-                <th className="p-2 text-center">Nível de Acesso</th>
-                <th className="p-2 text-center">Status</th>
+                <th className="p-2 text-center cursor-pointer select-none" onClick={() => toggleRoleSort("role")}>
+                  Cargo {sortIcon(roleSort, "role")}
+                </th>
+                <th className="p-2 text-center cursor-pointer select-none" onClick={() => toggleRoleSort("access_level")}>
+                  Nível de Acesso {sortIcon(roleSort, "access_level")}
+                </th>
+                <th className="p-2 text-center cursor-pointer select-none" onClick={() => toggleRoleSort("status")}>
+                  Status {sortIcon(roleSort, "status")}
+                </th>
                 <th className="p-2 text-center">Ações</th>
               </tr>
             </thead>
             <tbody>
               {rolesLoading ? (
                 <tr><td colSpan={4} className="py-6 text-center text-gray-500">Carregando…</td></tr>
-              ) : roles.length > 0 ? (
-                roles.map(r => (
+              ) : rolesView.length > 0 ? (
+                rolesView.map(r => (
                   <tr key={r.id} className="border-t">
                     <td className="p-2 text-center">{r.role}</td>
                     <td className="p-2 text-center">{Number.isFinite(r.access_level) ? r.access_level : "-"}</td>
@@ -538,7 +691,7 @@ export default function ConfigAdministrationPage() {
                   </tr>
                 ))
               ) : (
-                <tr><td colSpan={4} className="py-6 text-center text-gray-500">Nenhum cargo cadastrado.</td></tr>
+                <tr><td colSpan={4} className="py-6 text-center text-gray-500">Nenhum cargo encontrado.</td></tr>
               )}
             </tbody>
           </table>
@@ -547,13 +700,29 @@ export default function ConfigAdministrationPage() {
 
       <div className="mt-12">
         <h2 className="text-2xl font-bold mb-4 text-center">Gestão de Níveis de Acesso</h2>
-        <div className="flex items-center justify-between mb-4">
+
+        {/* Barra de ações + filtro (Níveis) */}
+        <div className="flex items-center justify-between mb-4 gap-3">
           <button
-            onClick={openPermModalForCreate}
+            onClick={() => {
+              // abrir modal de criação
+              setEditingLevel(null);
+              setPermModalLevelInput("");
+              setPermModalPerms(EMPTY_PERMS);
+              setPermModalErr("");
+              setPermModalOpen(true);
+            }}
             className="bg-primary text-white px-4 py-2 rounded-lg font-bold shadow hover:bg-purple-700 transition"
           >
             Novo Nível de Acesso
           </button>
+          <input
+            type="search"
+            value={levelFilter}
+            onChange={e => setLevelFilter(e.target.value)}
+            placeholder="Filtrar por nível de acesso"
+            className="input w-full max-w-md"
+          />
         </div>
 
         {levelMsg && <div className="mb-4 p-2 bg-green-100 text-green-700 rounded">{levelMsg}</div>}
@@ -572,10 +741,11 @@ export default function ConfigAdministrationPage() {
             <tbody>
               {levelsLoading ? (
                 <tr><td colSpan={4} className="py-6 text-center text-gray-500">Carregando…</td></tr>
-              ) : levelsSorted.length === 0 ? (
-                <tr><td colSpan={4} className="py-6 text-center text-gray-500">Nenhum nível configurado.</td></tr>
+              ) : levelsFiltered.length === 0 ? (
+                <tr><td colSpan={4} className="py-6 text-center text-gray-500">Nenhum nível encontrado.</td></tr>
               ) : (
-                levelsSorted.map(lvl => {
+                // mantém ordenação fixa por nível
+                [...levelsFiltered].sort((a, b) => (a.access_level ?? 1e9) - (b.access_level ?? 1e9)).map(lvl => {
                   const labels = labelsForAllowedPages(lvl.allowed_pages);
                   const by = lvl.defined_by || "—";
                   return (
@@ -621,6 +791,7 @@ export default function ConfigAdministrationPage() {
         </div>
       </div>
 
+      {/* MODAL Colaborador */}
       {showModal && (
         <div className="fixed inset-0 bg-black bg-opacity-30 flex items-center justify-center z-50">
           <div className="bg-white rounded-xl p-6 shadow-xl w-full max-w-xl relative">
@@ -659,6 +830,7 @@ export default function ConfigAdministrationPage() {
         </div>
       )}
 
+      {/* MODAL Cargo */}
       {showRoleModal && (
         <div className="fixed inset-0 bg-black bg-opacity-30 flex items-center justify-center z-50">
           <div className="bg-white rounded-xl p-6 shadow-xl w-full max-w-md relative">
@@ -687,6 +859,7 @@ export default function ConfigAdministrationPage() {
         </div>
       )}
 
+      {/* MODAL Nível */}
       {permModalOpen && (
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
           <div className="bg-white rounded-xl p-6 shadow-xl w-full max-w-3xl relative">
@@ -712,7 +885,7 @@ export default function ConfigAdministrationPage() {
                 <label className="block text-sm mb-2 font-semibold">Permissões</label>
                 <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
                   {PERMISSION_OPTIONS.map((opt) => {
-                    const isRoot = opt.key === "config_root"; // "Todas as Configurações"
+                    const isRoot = opt.key === "config_root";
                     return (
                       <label
                         key={opt.key}

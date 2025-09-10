@@ -36,6 +36,15 @@ export default function ConfigDocumentsEmployeesPage() {
     }
   }, [roleId, isAdmin, myRoleId, navigate]);
 
+  useEffect(() => {
+    if (!isAdmin && !roleId) {
+      const rid = Number(myRoleId);
+      if (Number.isFinite(rid) && rid > 0) {
+        navigate(`/configuracoes/documentos/colaboradores/${rid}`, { replace: true });
+      }
+    }
+  }, [isAdmin, roleId, myRoleId, navigate]);
+
   async function fetchDocs() {
     if (!roleId) return;
     setLoading(true);
@@ -60,22 +69,6 @@ export default function ConfigDocumentsEmployeesPage() {
   useEffect(() => {
     fetchDocs();
   }, [roleId]);
-
-  async function handleDelete(docId) {
-    if (!canEdit) return;
-    if (!window.confirm("Confirma exclusão do documento?")) return;
-    try {
-      const res = await authFetch(
-        `${API_URL}/company/documents/${docId}?is_employee_doc=true`,
-        { method: "DELETE" }
-      );
-      const data = await res.json();
-      if (data.detail) throw new Error(data.detail);
-      fetchDocs();
-    } catch (e) {
-      alert(e?.message || "Erro ao excluir documento.");
-    }
-  }
 
   return (
     <div className="bg-transparent">

@@ -140,7 +140,7 @@ export default function NotificationBell() {
     const qs = new URLSearchParams();
     if (ev.user_phone) qs.set("phone", String(ev.user_phone));
     if (ev.message_id) qs.set("message_id", String(ev.message_id));
-    const url = `/conversas-ativas?${qs.toString()}`;
+    const url = `/conversas?${qs.toString()}`;
     try {
       await authFetch(`${API_URL}/admin/events/${ev.id}/view`, { method: "POST" });
       setEvents(prev => {

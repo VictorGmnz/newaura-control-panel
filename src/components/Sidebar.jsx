@@ -13,20 +13,18 @@ import {
   FaSignOutAlt,
 } from "react-icons/fa";
 import { useAuth } from "../utils/authData";
-import { authFetch } from "../utils/authFetch";
-
-const API_URL = import.meta.env.VITE_API_URL;
 
 const NAV_ITEMS = [
   { label: "Dashboard", icon: <FaChartLine />, to: "/", perm: "dashboard" },
-  { label: "Conversas", icon: <FaComments />, to: "/conversas-ativas", perm: "active_conversations" },
-  { label: "Feedbacks", icon: <FaStar />, to: "/feedbacks", perm: "reports" },
+  { label: "Conversas", icon: <FaComments />, to: "/conversas", perm: "messages" },
+  { label: "Feedbacks", icon: <FaStar />, to: "/feedbacks", perm: "feedback" },
   { label: "Relatórios", icon: <FaChartBar />, to: "/relatorios", perm: "reports" },
 ];
 
 const CONFIG_SUBMENUS = [
   { label: "Empresa", to: "/configuracoes/empresa", icon: <FaBuilding />, perm: "config_company" },
-  { label: "Documentos", to: "/configuracoes/documentos", icon: <FaFile />, perm: "config_documents" },
+  { label: "Documentos de Clientes", to: "/configuracoes/documentos/clientes", icon: <FaFile />, perm: "config_documents" },
+  { label: "Documentos de Colaboradores", to: "/configuracoes/documentos/colaboradores", icon: <FaFile />, perm: "config_documents" },
   { label: "Administração", to: "/configuracoes/administração", icon: <FaUsers />, perm: "config_admin" },
   { label: "Chatbot", to: "/configuracoes/chatbot", icon: <FaRobot />, perm: "config_chatbot" },
 ];
@@ -40,8 +38,6 @@ export default function Sidebar() {
   const location = useLocation();
   const { user, logout } = useAuth();
   const [showConfig, setShowConfig] = useState(false);
-  const [showDocs, setShowDocs] = useState(false);
-  const [roles, setRoles] = useState([]);
   const configRef = useRef(null);
 
   if (!user) return null;
@@ -66,26 +62,7 @@ export default function Sidebar() {
   const configToRender = allPages ? CONFIG_SUBMENUS : CONFIG_SUBMENUS.filter((s) => hasPerm(s.perm));
 
   useEffect(() => {
-    let alive = true;
-    async function loadRoles() {
-      if (!showDocs || !allPages) return;
-      try {
-        const res = await authFetch(`${API_URL}/company/roles?company_id=${user.company_id}`);
-        const data = await res.json();
-        if (!alive) return;
-        setRoles(data?.roles || []);
-      } catch {
-        if (!alive) return;
-        setRoles([]);
-      }
-    }
-    loadRoles();
-    return () => { alive = false; };
-  }, [showDocs, allPages, user?.company_id]);
-
-  useEffect(() => {
     setShowConfig(false);
-    setShowDocs(false);
   }, [location.pathname]);
 
   useEffect(() => {
@@ -93,7 +70,6 @@ export default function Sidebar() {
       if (!showConfig) return;
       if (configRef.current && !configRef.current.contains(e.target)) {
         setShowConfig(false);
-        setShowDocs(false);
       }
     }
     document.addEventListener("mousedown", handleClickOutside);
@@ -107,9 +83,6 @@ export default function Sidebar() {
 
   function handleConfigMouseEnter() {
     setShowConfig(true);
-  }
-  function openDocsOnHover() {
-    setShowDocs(true);
   }
 
   return (
@@ -150,83 +123,18 @@ export default function Sidebar() {
             </div>
 
             {showConfig && (
-              <div className="absolute left-full top-0 bg-white border rounded-lg shadow-xl min-w-[200px] z-50 py-2 flex flex-col animate-fade-in-up">
-                {configToRender.map((sub) => {
-                  if (sub.perm === "config_documents") {
-                    return (
-                      <div
-                        key={sub.label}
-                        className="relative"
-                        onMouseEnter={openDocsOnHover}
-                      >
-                        <div className="flex items-center gap-2 px-4 py-2 text-gray-700 hover:bg-[#5A2EBB] hover:text-white cursor-default">
-                          <span className="text-base"><FaFile /></span>
-                          <span>{sub.label}</span>
-                        </div>
-
-                        {/* Submenu à direita do item "Documentos" */}
-                        {showDocs && (
-                          <div className="absolute left-full top-0 bg-white border rounded-lg shadow-xl min-w-[230px] z-50 py-2 flex flex-col">
-                            <div className="px-4 pt-2 pb-1 text-xs uppercase tracking-wide bg-gray-700 text-white">
-                              Clientes
-                            </div>
-                            <Link
-                              to="/configuracoes/documentos"
-                              className="px-4 py-2 text-sm text-gray-700 hover:bg-[#5A2EBB] hover:text-white"
-                              style={{ textDecoration: "none" }}
-                            >
-                              Documentos
-                            </Link>
-
-                            <div className="px-4 pt-2 pb-1 text-xs uppercase tracking-wide bg-gray-700 text-white">
-                              Colaboradores
-                            </div>
-
-                            {allPages ? (
-                              roles.length ? (
-                                roles.map((r) => (
-                                  <Link
-                                    key={r.id}
-                                    to={`/configuracoes/documentos/setor/${r.id}`}
-                                    className="px-4 py-2 text-sm text-gray-700 hover:bg-[#5A2EBB] hover:text-white"
-                                    style={{ textDecoration: "none" }}
-                                  >
-                                    {r.role}
-                                  </Link>
-                                ))
-                              ) : (
-                                <div className="px-4 py-2 text-sm text-gray-500">
-                                  (carregando…)
-                                </div>
-                              )
-                            ) : (
-                              <Link
-                                to={`/configuracoes/documentos/setor/${user?.role_id}`}
-                                className="px-4 py-2 text-sm text-gray-700 hover:bg-[#5A2EBB] hover:text-white"
-                                style={{ textDecoration: "none" }}
-                                title={user?.role || user?.role_name || "Seu setor"}
-                              >
-                                {user?.role || user?.role_name || "Seu setor"}
-                              </Link>
-                            )}
-                          </div>
-                        )}
-                      </div>
-                    );
-                  }
-
-                  return (
-                    <Link
-                      key={sub.label}
-                      to={sub.to}
-                      className="flex items-center gap-2 px-4 py-2 text-gray-700 hover:bg-[#5A2EBB] hover:text-white"
-                      style={{ textDecoration: "none" }}
-                    >
-                      <span className="text-base">{sub.icon}</span>
-                      <span>{sub.label}</span>
-                    </Link>
-                  );
-                })}
+              <div className="absolute left-full top-0 bg-white border rounded-lg shadow-xl min-w-[280px] z-50 py-2 flex flex-col animate-fade-in-up">
+                {configToRender.map((sub) => (
+                  <Link
+                    key={sub.label}
+                    to={sub.to}
+                    className="flex items-center gap-2 px-4 py-2 text-gray-700 hover:bg-[#5A2EBB] hover:text-white"
+                    style={{ textDecoration: "none" }}
+                  >
+                    <span className="text-base">{sub.icon}</span>
+                    <span>{sub.label}</span>
+                  </Link>
+                ))}
               </div>
             )}
           </div>

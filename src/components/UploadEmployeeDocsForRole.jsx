@@ -6,6 +6,8 @@ import { FaTimes } from "react-icons/fa";
 
 const API_URL = import.meta.env.VITE_API_URL;
 
+/* ========================= helpers ========================= */
+
 function normalizeAllowedPages(user) {
   const ap = Array.isArray(user?.allowed_pages) ? user.allowed_pages : [];
   return ap.map(String).map(s => s.trim()).filter(Boolean);
@@ -60,14 +62,23 @@ function dedupeDocuments(list) {
   return rows;
 }
 
-export default function UploadEmployeeDocsForRole() {
+/* ========================= component ========================= */
+
+export default function UploadEmployeeDocsForRole({
+  roleId: roleIdProp,        // opcional (quando o pai quiser forçar)
+  roleName: roleNameProp,    // opcional (apenas exibição)
+  onUploaded,                // opcional (callback após upload)
+}) {
   const { user } = useAuth();
-  const { roleId } = useParams();
-  const numericRoleId = Number(roleId);
+  const { roleId: roleIdParam } = useParams();
+
+  // prioridade: prop > param da rota > cargo do usuário
+  const effectiveRoleId = Number(roleIdProp ?? roleIdParam ?? user?.role_id);
+  const numericRoleId = Number.isFinite(effectiveRoleId) ? effectiveRoleId : 0;
 
   const allowed = useMemo(() => normalizeAllowedPages(user), [user]);
   const allPages = useMemo(() => new Set(allowed).has("all_pages"), [allowed]);
-  const isAdminOwnSector = allPages && Number(user?.role_id) === numericRoleId;
+  const isAdminOwnSector = allPages;
 
   const [docs, setDocs] = useState([]);
   const [msg, setMsg] = useState("");
@@ -97,25 +108,33 @@ export default function UploadEmployeeDocsForRole() {
   const [roleFilterId, setRoleFilterId] = useState("");
 
   const currentRoleName = useMemo(() => {
+    if (roleNameProp) return roleNameProp;
     const fromList = roles.find(r => Number(r.id) === numericRoleId)?.role;
     if (fromList) return fromList;
     if (Number(user?.role_id) === numericRoleId) return user?.role || user?.role_name || "";
     return "";
-  }, [roles, numericRoleId, user]);
+  }, [roles, numericRoleId, user, roleNameProp]);
+
+  /* ---------------- effects ---------------- */
 
   useEffect(() => {
     fetchDocs();
-  }, [roleId]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [numericRoleId, isAdminOwnSector, user?.company_id]);
 
   useEffect(() => {
     fetchCompanyRoles();
-  }, [roleId]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.company_id]);
 
+  // ⚠️ buscamos os cargos por documento sob demanda (no delete),
+  // mas para admin carregamos para exibir a coluna "Setores"
   useEffect(() => {
     if (!allPages) return;
     docs.forEach(d => {
       if (!rolesByDoc[d.id]) fetchDocRoles(d.id);
     });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [docs, allPages]);
 
   useEffect(() => {
@@ -130,17 +149,26 @@ export default function UploadEmployeeDocsForRole() {
     setRoleFilterId("");
     if (fileInputRef.current) fileInputRef.current.value = "";
     setFile(null);
-  }, [roleId]);
+  }, [numericRoleId]);
+
+  /* ---------------- data fetchers ---------------- */
 
   async function fetchDocs() {
     try {
       setError("");
       let url;
+
       if (isAdminOwnSector) {
         url = `${API_URL}/company/documents?company_id=${user.company_id}&is_employee_doc=true`;
       } else {
+        if (!numericRoleId) {
+          setDocs([]);
+          setError("Cargo inválido.");
+          return;
+        }
         url = `${API_URL}/company/roles/${numericRoleId}/documents?company_id=${user.company_id}&is_employee_doc=true`;
       }
+
       const res = await authFetch(url);
       const data = await res.json();
       const raw = Array.isArray(data?.documents) ? data.documents : [];
@@ -168,6 +196,7 @@ export default function UploadEmployeeDocsForRole() {
     }
   }
 
+  // 🔁 agora retorna a lista de cargos do documento
   async function fetchDocRoles(docId) {
     setRolesByDoc(prev => ({ ...prev, [docId]: { loading: true, roles: [] } }));
     try {
@@ -181,10 +210,14 @@ export default function UploadEmployeeDocsForRole() {
         access_level: r.access_level,
       }));
       setRolesByDoc(prev => ({ ...prev, [docId]: { loading: false, roles: docRoles } }));
+      return docRoles;
     } catch {
       setRolesByDoc(prev => ({ ...prev, [docId]: { loading: false, roles: null } }));
+      return null;
     }
   }
+
+  /* ---------------- handlers ---------------- */
 
   function handleFileChange(e) {
     const f = e.target.files?.[0] || null;
@@ -216,9 +249,47 @@ export default function UploadEmployeeDocsForRole() {
     });
   }, [roleSearch, roles]);
 
+  // ✅ validação de permissão para excluir (não-admin)
+  async function canDeleteDocAsNonAdmin(docId) {
+    // garante que temos os cargos do documento
+    let entry = rolesByDoc[docId];
+    let docRoles = entry?.roles;
+
+    if (!entry || entry.loading || docRoles == null) {
+      docRoles = await fetchDocRoles(docId);
+    }
+    if (!docRoles) {
+      setError("Não foi possível verificar a permissão para este documento.");
+      return false;
+    }
+
+    // doc disponível para todos (sem cargos vinculados) → bloqueia
+    if (docRoles.length === 0) {
+      setError("Você não pode excluir este documento pois ele está vinculado a outros cargos além do seu.");
+      return false;
+    }
+
+    // doc associado a cargos diferentes do meu → bloqueia
+    const hasOtherRole = docRoles.some(r => Number(r.role_id) !== Number(numericRoleId));
+    if (hasOtherRole) {
+      setError("Você não pode excluir este documento pois ele está vinculado a outros cargos além do seu.");
+      return false;
+    }
+
+    // doc exclusivamente do meu cargo → permitido
+    return true;
+  }
+
   async function handleDelete(docId) {
     if (!window.confirm("Confirma exclusão do documento?")) return;
     setError(""); setMsg("");
+
+    // não-admin: valida
+    if (!allPages) {
+      const ok = await canDeleteDocAsNonAdmin(docId);
+      if (!ok) return;
+    }
+
     try {
       const res = await authFetch(
         `${API_URL}/company/documents/${docId}?company_id=${user.company_id}&is_employee_doc=true`,
@@ -298,7 +369,8 @@ export default function UploadEmployeeDocsForRole() {
       if (fileInputRef.current) fileInputRef.current.value = "";
 
       setRolesByDoc({});
-      fetchDocs();
+      await fetchDocs();
+      if (typeof onUploaded === "function") onUploaded();
     } catch (err) {
       setError(err?.message || "Erro no envio do documento.");
     } finally {
@@ -423,6 +495,8 @@ export default function UploadEmployeeDocsForRole() {
 
   const totalCols = allPages ? 6 : 5;
 
+  /* ---------------- render ---------------- */
+
   return (
     <div className="bg-white rounded-xl shadow p-6 mt-12 max-w-6xl mx-auto">
       <h3 className="text-xl font-bold text-primary mb-2">
@@ -483,12 +557,13 @@ export default function UploadEmployeeDocsForRole() {
               />
               <span className="font-medium">Disponibilizar documento para todos os cargos</span>
             </label>
-
+            <div className="h-px bg-gray-500 mt-4" />
             {!applyToAll && (
               <>
                 <div className="flex items-center justify-between gap-2 mt-3">
                   <label className="text-sm font-medium">
-                    Setores específicos (opcional){!isAdminOwnSector && <> — se nenhum setor for selecionado, o documento será vinculado ao setor atual (<strong>{currentRoleName || ""}</strong>).</>}
+                    Disponibilizar para setores específicos (opcional)
+                    {isAdminOwnSector && <> — se nenhum setor for selecionado, o documento será vinculado ao setor atual (<strong>{currentRoleName || ""}</strong>).</>}
                   </label>
                   <span className="text-xs text-gray-500">Selecionados: {selectedRoleIds.length}</span>
                 </div>
@@ -502,15 +577,15 @@ export default function UploadEmployeeDocsForRole() {
                     onChange={e => setRoleSearch(e.target.value)}
                     disabled={uploading}
                   />
+                </div>
                   <button
                     type="button"
                     onClick={clearSelection}
-                    className="text-xs font-bold text-primary hover:bg-gray-200 px-2 py-1 rounded"
+                    className="text-xs font-bold text-primary hover:bg-gray-200 mb-4 mt-2 px-2 py-1 rounded"
                     disabled={uploading}
                   >
-                    Limpar
+                    Limpar cargos selecionados
                   </button>
-                </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-1 max-h-48 overflow-auto pr-1">
                   {filteredRoles.map(r => {
@@ -636,7 +711,7 @@ export default function UploadEmployeeDocsForRole() {
               ))}
               {docsView.length === 0 && (
                 <tr>
-                  <td className="text-center text-gray-500 py-4" colSpan={totalCols}>
+                  <td className="text-center text-gray-500 py-4" colSpan={allPages ? 6 : 5}>
                     Nenhum documento encontrado {searchTitle ? "para esse filtro." : "ainda."}
                   </td>
                 </tr>

@@ -4,8 +4,8 @@ import { useAuth } from "../utils/authData";
 
 const ROUTE_BY_KEY = {
   dashboard: "/",
-  messages: "/mensagens",
-  active_conversations: "/conversas-ativas",
+  messages: "/conversas",
+  messages: "/feedback",
   reports: "/relatorios",
   config_root: "/configuracoes/empresa",
   config_company: "/configuracoes/empresa",
@@ -15,11 +15,12 @@ const ROUTE_BY_KEY = {
 };
 
 const FALLBACK_BY_LEVEL = {
-  1: ["dashboard", "messages", "active_conversations"],
-  2: ["dashboard", "messages", "active_conversations", "reports"],
+  1: ["dashboard", "messages"],
+  2: ["dashboard", "messages","feedback", "reports"],
   3: [
     "dashboard",
     "messages",
+    "feedback",
     "active_conversations",
     "reports",
     "config_company",
@@ -42,7 +43,7 @@ function pickFirstRoute(allowedPages) {
   const order = [
     "dashboard",
     "messages",
-    "active_conversations",
+    "feedback",
     "reports",
     "config_root",
     "config_company",

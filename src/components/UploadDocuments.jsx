@@ -161,12 +161,13 @@ export default function UploadDocuments() {
   }
 
   return (
-    <div className="bg-white rounded-xl shadow p-6 mt-12 max-w-6xl mx-auto">
+    <div className="bg-white rounded-xl shadow p-6 mt-4 max-w-6xl mx-auto">
       <h3 className="text-xl font-bold text-primary mb-2">📄 Documentos para Clientes</h3>
       <p className="text-gray-500 mb-4">
-        Os documentos inseridos aqui serão utilizados exclusivamente para o Chatbot responder seus clientes (ex.: cardápios, listas de preços, políticas de troca etc.).
+        Os documentos inseridos aqui serão utilizados exclusivamente para o Chatbot responder seus clientes.
+        <br />(ex.: cardápios, listas de preços, políticas de troca etc.).
       </p>
-      <p className="text-yellow-600 mb-4">
+      <p className="text-yellow-600 mb-4 font-bold">
         Envie arquivos PDF, DOCX ou XLSX (máx. 10MB). Prefira arquivos objetivos e bem estruturados.
       </p>
 

@@ -12,6 +12,7 @@ import ConfigAdministrationPage from "./pages/ConfigAdministrationPage";
 import RealTimeMessagesPage from "./pages/RealTimeMessagesPage";
 import ConfigChatbotPage from "./pages/ConfigChatbotPage";
 import ConfigDocumentsEmployeesPage from "./pages/ConfigDocumentsEmployeesPage";
+import UploadEmployeeDocsForRole from "./components/UploadEmployeeDocsForRole";
 import { useAuth } from "./utils/authData";
 
 const INACTIVITY_TIMEOUT = 30 * 60 * 1000; // 30 min
@@ -75,20 +76,18 @@ export default function App() {
                 <main className="flex-1 bg-gray-100 min-h-screen pt-4 px-4 md:px-2 pb-8">
                   <Routes>
                     <Route path="/" element={<Dashboard />} />
-                    <Route path="/conversas-ativas" element={<RealTimeMessagesPage />} />
+                    <Route path="/conversas" element={<RealTimeMessagesPage />} />
                     <Route path="/feedbacks" element={<FeedbacksPage />} />
                     <Route path="/relatorios" element={<ReportsPage />} />
-                    {/* Configurações */}
+
                     <Route path="/configuracoes/empresa" element={<ConfigCompanyPage />} />
-                    {/* Clientes → UploadDocuments apenas */}
-                    <Route path="/configuracoes/documentos" element={<ConfigDocumentsPage />} />
-                    {/* Setor específico → upload + listagem */}
-                    <Route
-                      path="/configuracoes/documentos/setor/:roleId"
-                      element={<ConfigDocumentsEmployeesPage />}
-                    />
                     <Route path="/configuracoes/administração" element={<ConfigAdministrationPage />}/>
                     <Route path="/configuracoes/chatbot" element={<ConfigChatbotPage />} />
+
+                    <Route path="/configuracoes/documentos/clientes" element={<ConfigDocumentsPage />} />
+                    <Route path="/configuracoes/documentos/colaboradores" element={<ConfigDocumentsEmployeesPage />} />
+                    <Route path="/configuracoes/documentos/colaboradores/:roleId" element={<UploadEmployeeDocsForRole />} />
+
                     <Route path="*" element={<Navigate to="/" />} />
                   </Routes>
                 </main>

@@ -276,7 +276,7 @@ export default function Feedbacks() {
                     </td>
                     <td className="p-3 text-center">
                       <Link
-                        to={`/conversas-ativas?phone=${encodeURIComponent(it.user_phone || "")}`}
+                        to={`/conversas?phone=${encodeURIComponent(it.user_phone || "")}`}
                         className="inline-block bg-primary text-white px-3 py-1 rounded-lg shadow hover:bg-purple-700 transition"
                       >
                         Abrir conversa
