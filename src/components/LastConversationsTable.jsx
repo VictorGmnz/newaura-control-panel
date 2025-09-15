@@ -24,7 +24,7 @@ export default function LastConversationsTable({ conversations = [] }) {
             <tr className="text-left text-gray-500">
               <th className="pb-2">Contato</th>
               <th className="pb-2">Data</th>
-              <th className="pb-2 text-center whitespace-nowrap">Sessão</th>
+              <th className="pb-2 text-center whitespace-nowrap">Conversa</th>
               <th className="pb-2">Última mensagem</th>
               <th className="pb-2 text-center">Status</th>
             </tr>
@@ -55,7 +55,7 @@ export default function LastConversationsTable({ conversations = [] }) {
                     </div>
                   </td>
                   <td className="py-2 whitespace-nowrap">{fmtDate(when)}</td>
-                  <td className="py-2 text-center whitespace-nowrap">#{c.session_id}</td>
+                  <td className="py-2 text-center whitespace-nowrap">N°{c.session_id}</td>
                   <td className="py-2 truncate max-w-[280px]">{c.last_message || "-"}</td>
                   <td className="py-2 text-center">
                     <span
