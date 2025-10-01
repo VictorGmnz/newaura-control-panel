@@ -7,12 +7,11 @@ import FeedbacksPage from "./pages/FeedbacksPage";
 import ReportsPage from "./pages/ReportsPage";
 import LoginPage from "./pages/LoginPage";
 import ConfigCompanyPage from "./pages/ConfigCompanyPage";
-import ConfigDocumentsPage from "./pages/ConfigDocumentsPage";
-import ConfigAdministrationPage from "./pages/ConfigAdministrationPage";
+import ConfigLeadsPage from "./pages/ConfigLeadsPage";
+import ConfigCustomersPage from "./pages/ConfigCustomersPage";
+import ConfigEmployeesPage from "./pages/ConfigEmployeesPage";
 import RealTimeMessagesPage from "./pages/RealTimeMessagesPage";
 import ConfigChatbotPage from "./pages/ConfigChatbotPage";
-import ConfigDocumentsEmployeesPage from "./pages/ConfigDocumentsEmployeesPage";
-import UploadEmployeeDocsForRole from "./components/UploadEmployeeDocsForRole";
 import { useAuth } from "./utils/authData";
 
 const INACTIVITY_TIMEOUT = 30 * 60 * 1000; // 30 min
@@ -23,6 +22,7 @@ function ProtectedRoute({ children }) {
     !!token || !!(typeof window !== "undefined" && localStorage.getItem("token"));
   return hasToken ? children : <Navigate to="/login" replace />;
 }
+
 function RedirectRoute({ children }) {
   const { token } = useAuth();
   const hasToken =
@@ -65,6 +65,7 @@ export default function App() {
           </RedirectRoute>
         }
       />
+
       <Route
         path="/*"
         element={
@@ -75,19 +76,24 @@ export default function App() {
                 <Sidebar />
                 <main className="flex-1 bg-gray-100 min-h-screen pt-4 px-4 md:px-2 pb-8">
                   <Routes>
+                    {/* Home / Dashboard */}
                     <Route path="/" element={<Dashboard />} />
+
+                    {/* Conversas */}
                     <Route path="/conversas" element={<RealTimeMessagesPage />} />
+
+                    {/* Feedbacks / Relatórios */}
                     <Route path="/feedbacks" element={<FeedbacksPage />} />
                     <Route path="/relatorios" element={<ReportsPage />} />
 
+                    {/* Configurações */}
                     <Route path="/configuracoes/empresa" element={<ConfigCompanyPage />} />
-                    <Route path="/configuracoes/administração" element={<ConfigAdministrationPage />}/>
+                    <Route path="/configuracoes/clientes" element={<ConfigCustomersPage />} />
+                    <Route path="/configuracoes/leads" element={<ConfigLeadsPage />} />
+                    <Route path="/configuracoes/colaboradores" element={<ConfigEmployeesPage />} />
                     <Route path="/configuracoes/chatbot" element={<ConfigChatbotPage />} />
 
-                    <Route path="/configuracoes/documentos/clientes" element={<ConfigDocumentsPage />} />
-                    <Route path="/configuracoes/documentos/colaboradores" element={<ConfigDocumentsEmployeesPage />} />
-                    <Route path="/configuracoes/documentos/colaboradores/:roleId" element={<UploadEmployeeDocsForRole />} />
-
+                    {/* Fallback */}
                     <Route path="*" element={<Navigate to="/" />} />
                   </Routes>
                 </main>

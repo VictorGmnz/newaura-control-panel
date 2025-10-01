@@ -5,6 +5,8 @@ import DateFilters from "../components/DateFilters";
 import { Link } from "react-router-dom";
 import { FaSort, FaSortUp, FaSortDown } from "react-icons/fa";
 
+const CLIENT_COLOR = "#C70021";
+
 function fmtDuration(sec) {
   if (sec == null || !Number.isFinite(Number(sec))) return "—";
   const s = Math.max(0, Math.trunc(sec));
@@ -48,8 +50,8 @@ export default function Feedbacks() {
   const [items, setItems] = useState([]);
   const [q, setQ] = useState("");
 
-  const [sortBy, setSortBy] = useState("sent_at"); // sent_at | frt_seconds | user_name | session_id | feedback
-  const [sortDir, setSortDir] = useState("desc");  // asc | desc
+  const [sortBy, setSortBy] = useState("sent_at");
+  const [sortDir, setSortDir] = useState("desc");
 
   const [loading, setLoading] = useState(false);
 
@@ -90,7 +92,6 @@ export default function Feedbacks() {
       : <FaSortDown className={`${base} text-primary`} aria-hidden="true" />;
   }
 
-  // rank semântico para ordenar feedback: Otimo(0) < Regular(1) < Ruim(2) < Sem resposta(3)
   function feedbackRank(feedback, responded) {
     const k = norm(feedback);
     if (!responded || !k || k === "—" || k === "-") return 3;
@@ -140,7 +141,6 @@ export default function Feedbacks() {
       if (va < vb) return -1 * dirFactor;
       if (va > vb) return 1 * dirFactor;
 
-      // desempate por data de envio (mais recente primeiro)
       const ta = new Date(a.sent_at || 0).getTime();
       const tb = new Date(b.sent_at || 0).getTime();
       if (ta === tb) return 0;
@@ -164,7 +164,7 @@ export default function Feedbacks() {
   }
 
   return (
-    <div className="p-6">
+    <div className="p-6" style={{ filter: "drop-shadow(0 0 8px rgba(0,0,0,.30))" }}>
       <div className="flex items-center justify-between mb-4 gap-3">
         <h2 className="text-2xl font-bold">Feedbacks</h2>
       </div>
@@ -183,10 +183,10 @@ export default function Feedbacks() {
       <div className="bg-white shadow rounded-xl overflow-hidden">
         <table className="w-full text-sm">
           <thead>
-            <tr className="text-left text-gray-500">
+            <tr className="bg-primary text-left text-white">
               <th className="p-3">
                 <button
-                  className="flex items-center font-medium"
+                  className="flex items-center font-bold"
                   onClick={() => headerSort("user_name")}
                   aria-sort={ariaSort("user_name")}
                 >
@@ -195,7 +195,7 @@ export default function Feedbacks() {
               </th>
               <th className="p-3">
                 <button
-                  className="flex items-center font-medium"
+                  className="flex items-center font-bold"
                   onClick={() => headerSort("feedback")}
                   aria-sort={ariaSort("feedback")}
                 >
@@ -204,7 +204,7 @@ export default function Feedbacks() {
               </th>
               <th className="p-3">
                 <button
-                  className="flex items-center font-medium"
+                  className="flex items-center font-bold"
                   onClick={() => headerSort("sent_at")}
                   aria-sort={ariaSort("sent_at")}
                 >
@@ -213,7 +213,7 @@ export default function Feedbacks() {
               </th>
               <th className="p-3">
                 <button
-                  className="flex items-center font-medium"
+                  className="flex items-center font-bold"
                   onClick={() => headerSort("frt_seconds")}
                   aria-sort={ariaSort("frt_seconds")}
                 >
@@ -222,14 +222,14 @@ export default function Feedbacks() {
               </th>
               <th className="p-3 text-center">
                 <button
-                  className="flex items-center font-medium mx-auto"
+                  className="flex items-center font-bold mx-auto"
                   onClick={() => headerSort("session_id")}
                   aria-sort={ariaSort("session_id")}
                 >
                   Sessão <SortIcon col="session_id" />
                 </button>
               </th>
-              <th className="p-3 text-center">Ações</th>
+              <th className="p-3 text-center font-bold">Ações</th>
             </tr>
           </thead>
           <tbody>
@@ -244,15 +244,24 @@ export default function Feedbacks() {
             {!loading &&
               filtered.map((it) => {
                 const fbCls = feedbackBadgeClass(it.feedback);
+                const isClient = !!it.is_client;
 
                 return (
                   <tr key={`${it.feedback_id}-${it.session_id || it.user_phone}`} className="border-t">
                     <td className="p-3">
-                      <div className="font-semibold">
-                        {it.user_name || "Sem nome"}{" "}
+                      <div className="font-bold flex items-center gap-2 flex-wrap">
+                        <span>{it.user_name || "Sem nome"}</span>
                         {it.is_employee && (
-                          <span className="ml-1 text-xs bg-amber-100 text-amber-800 border border-amber-300 rounded px-2 py-0.5">
+                          <span className="text-xs bg-amber-100 text-amber-800 border border-amber-300 rounded px-2 py-0.5">
                             Colaborador
+                          </span>
+                        )}
+                        {isClient && (
+                          <span
+                            className="text-xs rounded px-2 py-0.5 border"
+                            style={{ backgroundColor: CLIENT_COLOR, color: "#fff", borderColor: CLIENT_COLOR }}
+                          >
+                            Cliente
                           </span>
                         )}
                       </div>

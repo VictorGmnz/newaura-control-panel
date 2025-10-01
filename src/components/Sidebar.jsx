@@ -6,11 +6,12 @@ import {
   FaCog,
   FaChartLine,
   FaStar,
-  FaFile,
+  FaCrosshairs,
   FaBuilding,
   FaUsers,
   FaRobot,
   FaSignOutAlt,
+  FaHandshake,
 } from "react-icons/fa";
 import { useAuth } from "../utils/authData";
 
@@ -23,15 +24,15 @@ const NAV_ITEMS = [
 
 const CONFIG_SUBMENUS = [
   { label: "Empresa", to: "/configuracoes/empresa", icon: <FaBuilding />, perm: "config_company" },
-  { label: "Documentos de Clientes", to: "/configuracoes/documentos/clientes", icon: <FaFile />, perm: "config_documents" },
-  { label: "Documentos de Colaboradores", to: "/configuracoes/documentos/colaboradores", icon: <FaFile />, perm: "config_documents" },
-  { label: "Administração", to: "/configuracoes/administração", icon: <FaUsers />, perm: "config_admin" },
+  { label: "Clientes", to: "/configuracoes/clientes", icon: <FaHandshake />, perm: "config_documents" },
+  { label: "Leads", to: "/configuracoes/leads", icon: <FaCrosshairs />, perm: "config_documents" },
+  { label: "Colaboradores", to: "/configuracoes/colaboradores", icon: <FaUsers />, perm: "config_documents" },
   { label: "Chatbot", to: "/configuracoes/chatbot", icon: <FaRobot />, perm: "config_chatbot" },
 ];
 
 function normalizeAllowedPages(user) {
   const ap = Array.isArray(user?.allowed_pages) ? user.allowed_pages : [];
-  return ap.map(String).map(s => s.trim()).filter(Boolean);
+  return ap.map(String).map((s) => s.trim()).filter(Boolean);
 }
 
 export default function Sidebar() {
@@ -81,10 +82,6 @@ export default function Sidebar() {
     window.location.href = "/login";
   }
 
-  function handleConfigMouseEnter() {
-    setShowConfig(true);
-  }
-
   return (
     <aside className="bg-white shadow w-20 md:w-56 flex flex-col fixed left-0 top-24 h-[calc(100vh-56px)] z-50">
       <nav className="flex-1 flex flex-col gap-2 mt-4">
@@ -105,11 +102,7 @@ export default function Sidebar() {
         ))}
 
         {showConfigRoot && (
-          <div
-            ref={configRef}
-            className="relative"
-            onMouseEnter={handleConfigMouseEnter}
-          >
+          <div ref={configRef} className="relative" onMouseEnter={() => setShowConfig(true)}>
             <div
               className={`flex items-center px-4 py-2 rounded-lg mx-2 gap-4 cursor-pointer transition ${
                 location.pathname.startsWith("/configuracoes")

@@ -778,8 +778,8 @@ export default function ReportsPage() {
 
   /* ========================= Render ========================= */
   return (
-    <div className="p-6">
-      <h2 className="text-2xl font-bold mb-4">Relatórios de Mensagens</h2>
+    <div className="p-6" style={{ filter: "drop-shadow(0 0 8px rgba(0,0,0,.30))" }}>
+      <h2 className="text-2xl font-bold mb-4" style={{ filter: "drop-shadow(0 0 8px rgba(0,0,0,.30))" }}>Relatórios de Mensagens</h2>
       <DateFilters value={{ start: filters.start, end: filters.end }} onApply={handleApplyFilters} includePhone={false} />
 
       {message && (
@@ -804,7 +804,7 @@ export default function ReportsPage() {
         </div>
 
         {showAdvanced && (
-          <div className="mt-2 mb-4 p-3 border rounded-lg bg-gray-50">
+          <div className="mt-2 mb-4 p-3 border rounded-lg bg-gray-50" style={{ filter: "drop-shadow(0 0 8px rgba(0,0,0,.30))" }}>
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
               <div className="md:col-span-2">
                 <label className="block text-sm text-gray-700 mb-1">Nome (contém)</label>
@@ -925,7 +925,7 @@ export default function ReportsPage() {
       </div>
 
       {/* Barra de export */}
-      <div className="mb-4">
+      <div className="mb-4" style={{ filter: "drop-shadow(0 0 8px rgba(0,0,0,.30))" }}>
         {showExportBar && (
           <div className="p-3 border rounded-lg bg-gray-50">
             <div className="flex flex-col lg:flex-row lg:items-end gap-3">
@@ -1057,7 +1057,7 @@ function DataGrid({ rows, totalRows, page, setPage, limit, setLimit }) {
 
   return (
     <>
-      <div className="mt-2 overflow-x-auto border border-gray-400 rounded-xl">
+      <div className="mt-2 overflow-x-auto border border-gray-400 rounded-xl" style={{ filter: "drop-shadow(0 0 8px rgba(0,0,0,.30))" }}>
         <table className="min-w-full text-sm border-collapse">
           <thead className="bg-primary text-white">
             <tr>
@@ -1145,7 +1145,7 @@ function DataGrid({ rows, totalRows, page, setPage, limit, setLimit }) {
       </div>
 
       {/* Paginação */}
-      <div className="mt-4 flex items-center justify-between">
+      <div className="mt-4 flex items-center justify-between" >
         <div className="text-sm text-gray-600">
           {totalRows ?? 0} linha(s) • Página {page} de {Math.max(1, Math.ceil((totalRows || 0) / limit))}
         </div>

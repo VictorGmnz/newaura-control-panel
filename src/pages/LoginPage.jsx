@@ -5,24 +5,26 @@ import { useAuth } from "../utils/authData";
 const ROUTE_BY_KEY = {
   dashboard: "/",
   messages: "/conversas",
-  messages: "/feedback",
+  feedback: "/feedbacks",
   reports: "/relatorios",
+  customers: "/clientes",
+
   config_root: "/configuracoes/empresa",
   config_company: "/configuracoes/empresa",
-  config_documents: "/configuracoes/documentos",
+  config_documents: "/configuracoes/documentos/clientes",
   config_chatbot: "/configuracoes/chatbot",
   config_admin: "/configuracoes/administração",
 };
 
 const FALLBACK_BY_LEVEL = {
   1: ["dashboard", "messages"],
-  2: ["dashboard", "messages","feedback", "reports"],
+  2: ["dashboard", "messages", "feedback", "reports"],
   3: [
     "dashboard",
     "messages",
     "feedback",
-    "active_conversations",
     "reports",
+    "customers",
     "config_company",
     "config_documents",
     "config_chatbot",
@@ -33,7 +35,13 @@ const FALLBACK_BY_LEVEL = {
 
 function normalizeAllowedPages(user) {
   const arr = Array.isArray(user?.allowed_pages) ? user.allowed_pages : null;
-  if (arr && arr.length) return Array.from(new Set(arr));
+  if (arr && arr.length) {
+    if (arr.includes("all_pages")) {
+      // mantém o flag e já expande a lista de páginas
+      return ["all_pages", ...Object.keys(ROUTE_BY_KEY)];
+    }
+    return Array.from(new Set(arr));
+  }
   const lvl = Number(user?.level) || Number(user?.access_level) || 0;
   const fb = FALLBACK_BY_LEVEL[lvl] || [];
   return Array.from(new Set(fb));
@@ -45,6 +53,7 @@ function pickFirstRoute(allowedPages) {
     "messages",
     "feedback",
     "reports",
+    "customers",
     "config_root",
     "config_company",
     "config_documents",
@@ -73,24 +82,27 @@ export default function LoginPage() {
     authFetch(`${API_URL}/admin/login`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ username, password })
+      body: JSON.stringify({ username, password }),
     })
-      .then(async res => {
+      .then(async (res) => {
         if (!res.ok) {
           let backendMsg = "";
-          try { backendMsg = (await res.json())?.detail; } catch {}
+          try {
+            backendMsg = (await res.json())?.detail;
+          } catch {}
           if (res.status === 401) throw new Error(backendMsg || "Usuário ou senha inválidos.");
-          if (res.status === 403) throw new Error(backendMsg || "Usuário inativo. Peça para o administrador liberar seu acesso.");
-          throw new Error("Erro inesperado. Tente novamente mais tarde.");
+          if (res.status === 403)
+            throw new Error(backendMsg || "Usuário inativo. Peça para o administrador liberar seu acesso.");
+          throw new Error(backendMsg || "Erro inesperado. Tente novamente mais tarde.");
         }
         return res.json();
       })
-      .then(data => {
+      .then((data) => {
         const token = data?.token || data?.access_token;
-        const user  = data?.user;
+        const user = data?.user;
 
         if (!token) throw new Error("Token não recebido do servidor.");
-        if (!user)  throw new Error("Usuário não retornado pelo servidor.");
+        if (!user) throw new Error("Usuário não retornado pelo servidor.");
 
         const allowed_pages = normalizeAllowedPages(user);
         const userWithPerms = { ...user, allowed_pages };
@@ -100,8 +112,10 @@ export default function LoginPage() {
         const dest = pickFirstRoute(allowed_pages);
         window.location.href = dest;
       })
-      .catch(err => {
-        setError(err?.message || "Ocorreu um problema de conexão.\nPor favor, tente novamente mais tarde.");
+      .catch((err) => {
+        setError(
+          err?.message || "Ocorreu um problema de conexão.\nPor favor, tente novamente mais tarde."
+        );
       })
       .finally(() => setLoading(false));
   }
@@ -133,7 +147,7 @@ export default function LoginPage() {
             placeholder="Usuário"
             id="user-value"
             value={username}
-            onChange={e => setUsername(e.target.value)}
+            onChange={(e) => setUsername(e.target.value)}
             className="w-full px-3 py-2 mb-4 border rounded"
             disabled={loading}
             required
@@ -143,7 +157,7 @@ export default function LoginPage() {
             placeholder="Senha"
             id="pw-value"
             value={password}
-            onChange={e => setPassword(e.target.value)}
+            onChange={(e) => setPassword(e.target.value)}
             className="w-full px-3 py-2 mb-6 border rounded"
             disabled={loading}
             required

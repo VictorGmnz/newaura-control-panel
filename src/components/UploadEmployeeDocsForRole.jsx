@@ -65,9 +65,9 @@ function dedupeDocuments(list) {
 /* ========================= component ========================= */
 
 export default function UploadEmployeeDocsForRole({
-  roleId: roleIdProp,        // opcional (quando o pai quiser forçar)
-  roleName: roleNameProp,    // opcional (apenas exibição)
-  onUploaded,                // opcional (callback após upload)
+  roleId: roleIdProp,
+  roleName: roleNameProp,
+  onUploaded,
 }) {
   const { user } = useAuth();
   const { roleId: roleIdParam } = useParams();
@@ -77,6 +77,7 @@ export default function UploadEmployeeDocsForRole({
   const numericRoleId = Number.isFinite(effectiveRoleId) ? effectiveRoleId : 0;
 
   const allowed = useMemo(() => normalizeAllowedPages(user), [user]);
+
   const allPages = useMemo(() => new Set(allowed).has("all_pages"), [allowed]);
   const isAdminOwnSector = allPages;
 
@@ -520,6 +521,7 @@ export default function UploadEmployeeDocsForRole({
           accept=".pdf,.doc,.docx,.xls,.xlsx"
           onChange={handleFileChange}
           className="border rounded px-2 py-2 w-full"
+          style={{ filter: "drop-shadow(0 0 8px   #8a8a8a86)" }}
           disabled={uploading}
         />
 
@@ -545,8 +547,8 @@ export default function UploadEmployeeDocsForRole({
         />
 
         {allPages && (
-          <div className={`border bg-gray-100 rounded-lg p-3 ${uploading ? "opacity-60 pointer-events-none" : ""}`}>
-            <h3 className="text-xl font-bold text-primary">Área do Administrador</h3><br />
+          <div className={`border bg-gray-100 rounded-lg p-3 ${uploading ? "opacity-60 pointer-events-none" : ""}`} style={{ filter: "drop-shadow(0 0 8px rgba(0,0,0,.20))"}}>
+            <h3 className="text-xl font-bold text-primary" >Área do Administrador</h3><br />
             <label className="flex items-center gap-2">
               <input
                 type="checkbox"
@@ -561,11 +563,11 @@ export default function UploadEmployeeDocsForRole({
             {!applyToAll && (
               <>
                 <div className="flex items-center justify-between gap-2 mt-3">
-                  <label className="text-sm font-medium">
-                    Disponibilizar para setores específicos (opcional)
-                    {isAdminOwnSector && <> — se nenhum setor for selecionado, o documento será vinculado ao setor atual (<strong>{currentRoleName || ""}</strong>).</>}
+                  <label className="text-sm font-medium text-gray-800">
+                    • Para disponibilizar o documento para setores específicos selecione-os abaixo. <strong>(Opcional)</strong>
+                    <br/>{isAdminOwnSector && <> • Se nenhum setor for selecionado, o documento será vinculado apenas para o seu setor.</>}
                   </label>
-                  <span className="text-xs text-gray-500">Selecionados: {selectedRoleIds.length}</span>
+                  <span className="text-xs text-gray-800">Selecionados: {selectedRoleIds.length}</span>
                 </div>
 
                 <div className="flex items-center gap-2 mb-3 mt-2">
@@ -630,6 +632,7 @@ export default function UploadEmployeeDocsForRole({
           type="submit"
           className="bg-primary text-white px-4 py-2 rounded-lg shadow hover:bg-purple-700 transition w-full font-bold disabled:opacity-70"
           disabled={uploading}
+          style={{ filter: "drop-shadow(0 0 8px #7e22ce8e)" }}
         >
           {uploading ? "Enviando..." : "Enviar"}
         </button>
@@ -666,7 +669,7 @@ export default function UploadEmployeeDocsForRole({
           </div>
         </div>
 
-        <div className="overflow-x-auto rounded-lg shadow">
+        <div className="overflow-x-auto rounded-lg shadow mt-6" style={{ filter: "drop-shadow(0 0 8px rgba(0,0,0,.30))" }}>
           <table className="w-full text-sm bg-gray-50">
             <thead>
               <tr>

@@ -14,6 +14,25 @@ function fmtDate(v) {
   return `${dd}/${mm}/${yyyy} ${hh}:${mi}`;
 }
 
+function ContactBadge({ conv }) {
+  const type =
+    conv.contact_type ||
+    (conv.is_employee ? "Colaborador" : conv.is_client ? "Cliente" : "Lead");
+
+  const palette =
+    type === "Colaborador"
+      ? "text-amber-800 bg-amber-100 border border-amber-300"
+      : type === "Cliente"
+      ? "text-emerald-800 bg-emerald-100 border border-emerald-300"
+      : "text-sky-800 bg-sky-100 border border-sky-300";
+
+  return (
+    <span className={`text-xs rounded px-2 py-0.5 ${palette}`}>
+      {type}
+    </span>
+  );
+}
+
 export default function LastConversationsTable({ conversations = [] }) {
   return (
     <div className="bg-white shadow rounded-xl p-4 h-full overflow-hidden">
@@ -31,28 +50,17 @@ export default function LastConversationsTable({ conversations = [] }) {
           </thead>
           <tbody>
             {conversations.map((c) => {
-              const isEmployee = !!(c.is_employee || c.user_is_employee);
               const when =
-                c.last_at ||
-                c.updated_at ||
-                c.created_at ||
-                c.date ||
-                null;
+                c.last_at || c.updated_at || c.created_at || c.date || null;
 
               return (
                 <tr key={c.session_id} className="border-t">
                   <td className="py-2">
                     <div className="font-semibold flex items-center gap-2">
                       <span>{c.user_name || "Sem nome"}</span>
-                      {isEmployee && (
-                        <span className="text-amber-800 text-xs bg-amber-100 border border-amber-300 rounded px-2 py-0.5">
-                          Colaborador
-                        </span>
-                      )}
+                      <ContactBadge conv={c} />
                     </div>
-                    <div className="text-xs text-gray-500">
-                      {c.user_phone}
-                    </div>
+                    <div className="text-xs text-gray-500">{c.user_phone}</div>
                   </td>
                   <td className="py-2 whitespace-nowrap">{fmtDate(when)}</td>
                   <td className="py-2 text-center whitespace-nowrap">N°{c.session_id}</td>

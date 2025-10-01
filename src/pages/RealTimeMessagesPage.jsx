@@ -15,6 +15,8 @@ import {
 import { useLocation } from "react-router-dom";
 import DateFilters from "../components/DateFilters";
 
+const CLIENT_COLOR = "#C70021";
+
 /* helpers */
 const norm = (s) =>
   (s ?? "")
@@ -81,7 +83,6 @@ function fmtShortDate(v) {
   ).slice(-2)}`;
 }
 
-/* novo: HH:mm para carimbo embaixo da bolha */
 function fmtHourMin(v) {
   if (!v) return "";
   const d = new Date(v);
@@ -121,9 +122,7 @@ export default function RealTimeMessagesPage() {
   const scrollRef = useRef(null);
   const messagesReqSeq = useRef(0);
 
-  // ancora pra preservar a posição ao carregar anterior
   const anchorBottomDistRef = useRef(null);
-  // rolar pro fim quando necessário (enviar msg / selecionar contato)
   const scrollToBottomNextRef = useRef(false);
 
   const API_URL = import.meta.env.VITE_API_URL;
@@ -187,7 +186,7 @@ export default function RealTimeMessagesPage() {
       if (active && loadedSessionIds.includes(active.session_id)) {
         fetchSessionMessagesToMap(active.session_id);
       }
-    }, 3000);
+    }, 15000);
     pollingRef.current = id;
     return () => clearInterval(id);
   }, [status, filters.start, filters.end, q, selectedPhone, loadedSessionIds.length]);
@@ -197,6 +196,10 @@ export default function RealTimeMessagesPage() {
     const t = setTimeout(() => setMsg(""), 3500);
     return () => clearTimeout(t);
   }, [msg]);
+
+  // helper p/ sinalizar se o backend já trouxe flag de cliente
+  const isClientFromSession = (s) =>
+    !!(s?.is_client || s?.user_is_client || s?.client || s?.is_customer);
 
   const contacts = useMemo(() => {
     const map = new Map();
@@ -209,6 +212,7 @@ export default function RealTimeMessagesPage() {
           last_at: s.last_at,
           last_message: s.last_message,
           is_employee: !!(s.is_employee || s.user_is_employee),
+          is_client: !!isClientFromSession(s),
           sessions: []
         });
       }
@@ -222,13 +226,15 @@ export default function RealTimeMessagesPage() {
         started_at: s.started_at,
         ended_at: s.ended_at,
         employee_name: s.employee_name,
-        is_employee: !!(s.is_employee || s.user_is_employee)
+        is_employee: !!(s.is_employee || s.user_is_employee),
+        is_client: !!isClientFromSession(s)
       });
       if (new Date(s.last_at) > new Date(g.last_at || 0)) {
         g.last_at = s.last_at;
         g.last_message = s.last_message;
         g.name = s.user_name || g.name;
         g.is_employee = g.is_employee || !!(s.is_employee || s.user_is_employee);
+        g.is_client = g.is_client || !!isClientFromSession(s);
       }
     }
     for (const g of map.values()) {
@@ -266,7 +272,6 @@ export default function RealTimeMessagesPage() {
     if (target) handleSelectContact(target.phone);
   }, [initialPhone, contacts, selectedPhone]);
 
-  // pós-atualização do DOM: aplicar ancora / rolar pro fim quando necessário
   useEffect(() => {
     const el = scrollRef.current;
     if (!el) return;
@@ -297,17 +302,13 @@ export default function RealTimeMessagesPage() {
 
   function loadMoreSessions(n = 1) {
     if (!selectedContact) return;
-
-    // ancora: mantém a visão atual (não "sobe" automaticamente)
     const el = scrollRef.current;
     if (el) {
       anchorBottomDistRef.current = el.scrollHeight - el.scrollTop;
     }
-
     const remaining = selectedContact.sessions.filter(
       (s) => !loadedSessionIds.includes(s.session_id)
     );
-    // carrega a(s) próxima(s) conversa(s) ANTERIOR(ES)
     const toLoad = remaining.slice(0, n);
     if (toLoad.length === 0) return;
 
@@ -315,7 +316,6 @@ export default function RealTimeMessagesPage() {
     toLoad.forEach((t) => fetchSessionMessagesToMap(t.session_id));
   }
 
-  // blocos em ordem cronológica ASC (antigas em cima, recentes embaixo)
   const combinedMessages = useMemo(() => {
     if (!selectedContact) return [];
     const blocks = [];
@@ -339,6 +339,18 @@ export default function RealTimeMessagesPage() {
   const mine = activeSession
     ? isMineSession(activeSession, user, activeSessionMsgs)
     : false;
+
+  // Fallback: deduz "cliente" pelas mensagens carregadas (author === "Client" ou "FAQ_CLIENT")
+  const derivedIsClient = useMemo(() => {
+    if (!selectedContact) return false;
+    for (const sid of loadedSessionIds) {
+      const arr = messagesMap[sid] || [];
+      if (arr.some(m => m?.author === "Client" || m?.author === "FAQ_CLIENT")) return true;
+    }
+    return false;
+  }, [selectedContact, loadedSessionIds, messagesMap]);
+
+  const isSelectedClient = !!(selectedContact?.is_client || derivedIsClient);
 
   async function takeover() {
     if (!activeSession) {
@@ -441,7 +453,6 @@ export default function RealTimeMessagesPage() {
       .finally(() => setIsTakingOver(false));
   }
 
-  /* >>> timestamps sob cada bolha (cinza, pequeno) <<< */
   function renderMessage(m, idx) {
     const isEmployeeUser =
       m.payload.author === "Employee" || m.payload.is_employee === true;
@@ -469,7 +480,7 @@ export default function RealTimeMessagesPage() {
     }
 
     if (m.payload.response) {
-      const isBot = m.payload.author === "User" || m.payload.author === "Employee" || m.payload.author === "Bot"; //Bot é author legado, mas mantemos por compatibilidade
+      const isBot = m.payload.author === "User" || m.payload.author === "Employee" || m.payload.author === "Bot";
       const isFaq = m.payload.author === "FAQ";
       const isHuman = m.payload.author === "Human";
       out.push(
@@ -533,7 +544,7 @@ export default function RealTimeMessagesPage() {
   const limitBlocksYou = limitReached && !alreadyHoldingSeat;
 
   return (
-    <div className="flex flex-col h-[calc(100vh-80px)] bg-gray-50 text-[13px]">
+    <div className="flex flex-col h-[calc(100vh-80px)] bg-gray-50 text-[13px]" style={{ filter: "drop-shadow(0 0 8px rgba(0,0,0,.30))" }}>
       <div className="bg-white border-b shadow-sm px-6 py-2.5">
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-2.5">
           <DateFilters
@@ -550,8 +561,13 @@ export default function RealTimeMessagesPage() {
                     : "bg-green-100 text-green-700 border-green-300"
                 }`}
                 title="Operadores simultâneos em conversas"
+                style={{ filter: `${
+                  limitReached
+                  ? "drop-shadow(0 0 8px rgba(255, 75, 75, 0.5))"
+                  : "drop-shadow(0 0 8px rgba(61, 255, 109, 0.5))"
+                }`}}
               >
-                {limitReached && <FaExclamationTriangle className="inline mr-1" />}
+                {limitReached && <FaExclamationTriangle className="inline mr-1"/>}
                 Operadores: {Number(seatStatus.in_use)}/{Number(seatStatus.limit)}
               </span>
             </div>
@@ -559,10 +575,10 @@ export default function RealTimeMessagesPage() {
         </div>
       </div>
 
-      <div className="flex flex-1 min-h-0">
+      <div className="flex flex-1 min-h-0 w-full">
         {/* Lista de contatos */}
-        <aside className="w-80 bg-white border-r h-full overflow-y-auto shadow flex-shrink-0">
-          <div className="font-bold text-base px-4 py-2.5 border-b bg-gray-200 flex items-center gap-2">
+        <aside className="w-80 bg-white border-r h-full w-[300px] overflow-y-auto shadow flex-shrink-0">
+          <div className="font-bold text-base px-4 py-2.5 border-b bg-gray-200 flex items-center gap-2" >
             <FaComments className="text-primary" /> Contatos
           </div>
 
@@ -619,14 +635,24 @@ export default function RealTimeMessagesPage() {
                   key={c.phone}
                   className={itemCls}
                   onClick={() => handleSelectContact(c.phone)}
+                  style={{ filter: "drop-shadow(0 0 8px rgba(0,0,0,.30))" }}
                 >
                   <div className="min-w-0 flex-1">
                     <div className={`font-semibold text-sm flex items-center gap-2 ${nameCls}`}>
                       <FaUser className="inline mr-1" />
                       <span className="truncate">{c.name || "Sem nome"}</span>
+
                       {c.is_employee && (
                         <span className="ml-1 text-[10px] font-semibold text-amber-700">
                           (Colaborador)
+                        </span>
+                      )}
+                      {c.is_client && (
+                        <span
+                          className="ml-1 text-[10px] font-semibold px-1.5 py-0.5 rounded-full"
+                          style={{ backgroundColor: CLIENT_COLOR, color: "#fff" }}
+                        >
+                          Cliente
                         </span>
                       )}
                     </div>
@@ -678,11 +704,22 @@ export default function RealTimeMessagesPage() {
                     {selectedContact.name || "Sem nome"}
                     {selectedContact.is_employee ? " (Colaborador)" : ""}
                   </span>
+
                   {selectedContact.is_employee && (
                     <span className="text-[11px] px-2 py-0.5 rounded-full bg-amber-100 text-amber-700 border border-amber-300">
                       Colaborador
                     </span>
                   )}
+
+                  {isSelectedClient && (
+                    <span
+                      className="text-[11px] px-2 py-0.5 rounded-full border"
+                      style={{ backgroundColor: CLIENT_COLOR, color: "#fff", borderColor: CLIENT_COLOR }}
+                    >
+                      Cliente
+                    </span>
+                  )}
+
                   <span className="ml-2 text-[12px] text-gray-400">{selectedContact.phone}</span>
                   <span className="ml-4">{statusChipForActive()}</span>
                 </div>
@@ -732,6 +769,11 @@ export default function RealTimeMessagesPage() {
                 className={`flex-1 min-h-0 p-4 overflow-y-auto flex flex-col ${
                   selectedContact.is_employee ? "bg-amber-50" : ""
                 }`}
+                style={
+                  isSelectedClient && !selectedContact.is_employee
+                    ? { backgroundColor: "rgba(199,0,33,0.04)" }
+                    : undefined
+                }
               >
                 {/* Botão no TOPO para carregar anteriores (mantendo posição) */}
                 {selectedContact &&

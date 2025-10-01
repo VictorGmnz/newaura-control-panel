@@ -51,7 +51,7 @@ export default function ConfigCompanyPage() {
 
   return (
     <div className="p-6 max-w-3xl mx-auto">
-        <h2 className="text-2xl font-bold mb-6 text-center">Configuração da Empresa</h2>
+        <h2 className="text-2xl font-bold mb-6 text-center" style={{ filter: "drop-shadow(0 0 8px rgba(0,0,0,.30))" }}>Configuração da Empresa</h2>
         {message && (
             <div className="fixed bottom-8 right-8 bg-green-600 text-white px-6 py-3 rounded-xl shadow-xl z-50 animate-fade-in-up font-semibold transition">
                 {message}
@@ -60,7 +60,7 @@ export default function ConfigCompanyPage() {
         {error && <div className="mb-4 p-2 bg-red-100 text-red-700 rounded">{error}</div>}
         <form onSubmit={handleSave} className="space-y-6">
         {/* Dados da empresa */}
-        <div>
+        <div style={{ filter: "drop-shadow(0 0 8px rgba(0,0,0,.10))" }}>
           <h3 className="font-semibold mb-2 text-primary">Dados da Empresa</h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>

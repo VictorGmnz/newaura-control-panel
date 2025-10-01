@@ -545,7 +545,7 @@ export default function ConfigAdministrationPage() {
 
   return (
     <div className="p-6 max-w-6xl mx-auto">
-      <h2 className="text-2xl font-bold mb-4 text-center">Gestão de Colaboradores</h2>
+      <h2 className="text-2xl font-bold mb-4 text-center">Cadastrar Colaboradores</h2>
       <div className="mb-4 flex items-center gap-3 justify-between">
         <button
           onClick={() => openModal()}
@@ -635,7 +635,7 @@ export default function ConfigAdministrationPage() {
       </table>
 
       <div className="mt-12">
-        <h2 className="text-2xl font-bold mb-4 text-center">Gestão de Cargos</h2>
+        <h2 className="text-2xl font-bold mb-4 text-center">Cadastrar Cargos</h2>
 
         {/* Barra de ações + filtro (Cargos) */}
         <div className="flex items-center justify-between mb-4 gap-3">
@@ -699,7 +699,7 @@ export default function ConfigAdministrationPage() {
       </div>
 
       <div className="mt-12">
-        <h2 className="text-2xl font-bold mb-4 text-center">Gestão de Níveis de Acesso</h2>
+        <h2 className="text-2xl font-bold mb-4 text-center">Cadastrar Níveis de Acesso</h2>
 
         {/* Barra de ações + filtro (Níveis) */}
         <div className="flex items-center justify-between mb-4 gap-3">

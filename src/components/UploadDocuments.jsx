@@ -162,9 +162,9 @@ export default function UploadDocuments() {
 
   return (
     <div className="bg-white rounded-xl shadow p-6 mt-4 max-w-6xl mx-auto">
-      <h3 className="text-xl font-bold text-primary mb-2">📄 Documentos para Clientes</h3>
+      <h3 className="text-xl font-bold text-primary mb-2">📄 Documentos para Leads</h3>
       <p className="text-gray-500 mb-4">
-        Os documentos inseridos aqui serão utilizados exclusivamente para o Chatbot responder seus clientes.
+        Os documentos inseridos aqui serão utilizados exclusivamente para o Chatbot responder novos contatos(Leads).
         <br />(ex.: cardápios, listas de preços, políticas de troca etc.).
       </p>
       <p className="text-yellow-600 mb-4 font-bold">

@@ -96,7 +96,7 @@ export default function ConversationMetricsChart({ data = [] }) {
   }
 
   return (
-    <div className="bg-white shadow rounded-xl p-4 h-full">
+    <div className="bg-white shadow rounded-xl p-4">
       <div className="flex items-center justify-between mb-3">
         <h3 className="font-bold text-lg">Métricas de Conversas</h3>
         <div className="flex gap-3 text-sm">
@@ -151,6 +151,7 @@ export default function ConversationMetricsChart({ data = [] }) {
                 rx="0"
                 fill="#10b981"
                 opacity="0.85"
+                style={{ filter: "drop-shadow(0 0 8px #10b98181" }}
               />
               <rect
                 x={innerX}
@@ -159,6 +160,7 @@ export default function ConversationMetricsChart({ data = [] }) {
                 height={Math.max(0, hInner)}
                 rx="0"
                 fill="#5A2EBB"
+                style={{ filter: "drop-shadow(0 0 8px rgba(153, 0, 255, 0.75)"}}
               />
             </g>
           );

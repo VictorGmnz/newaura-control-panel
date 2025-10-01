@@ -8,6 +8,7 @@ import { getDefaultFilters } from "../utils/dateUtils";
 import { authFetch } from "../utils/authFetch";
 import { useAuth } from "../utils/authData";
 import UsageLimits from "../components/UsageLimits";
+import UsageBreakdowns from "../components/UsageBreakdowns";
 
 function TabButton({ label, active, onClick }) {
   return (
@@ -134,7 +135,7 @@ export default function Dashboard({ filters: filtersProp }) {
 
   return (
     <div>
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-4 my-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-4 my-4" style={{ filter: "drop-shadow(0 0 8px rgba(0,0,0,.30))" }}>
         {cards.map((c, i) => (
           <div key={i} className="bg-white shadow rounded-xl p-4 text-center">
             <div className="text-2xl font-extrabold text-primary">{c.value}</div>
@@ -145,16 +146,21 @@ export default function Dashboard({ filters: filtersProp }) {
 
       <DateFilters value={filters} onApply={setFilters} includePhone={false} />
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
-        <div className="lg:col-span-2">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6" style={{ filter: "drop-shadow(0 0 8px rgba(0,0,0,.30))" }}>
+        <div className="lg:col-span-3">
           <ConversationMetricsChart data={series} />
         </div>
+
         <div className="lg:col-span-1">
-          <UsageLimits usage={usage} authors={authors} range={filters} />
+          <UsageLimits usage={usage} />
+        </div>
+
+        <div className="lg:col-span-2">
+          <UsageBreakdowns authors={authors} range={filters} />
         </div>
       </div>
 
-      <div className="grid grid-cols-1 gap-6">
+      <div className="grid grid-cols-1 gap-6" style={{ filter: "drop-shadow(0 0 8px rgba(0,0,0,.30))" }}>
         <div className="bg-white shadow rounded-xl p-0">
           <div className="flex items-center gap-2 border-b px-4 pt-3">
             <TabButton label="Últimas conversas" active={tab === "last"} onClick={() => setTab("last")} />

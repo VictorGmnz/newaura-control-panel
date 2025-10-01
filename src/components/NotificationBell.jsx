@@ -98,7 +98,7 @@ export default function NotificationBell() {
     };
 
     fetchEvents();
-    pollRef.current = setInterval(fetchEvents, 10000);
+    pollRef.current = setInterval(fetchEvents, 15000);
     return () => {
       mounted = false;
       clearInterval(pollRef.current);
