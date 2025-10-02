@@ -4,6 +4,7 @@ import { createPortal } from "react-dom";
 import { api } from "../utils/apiClient";
 import { useAuth } from "../utils/authData";
 import UploadCustomerDocs from "../components/UploadCustomerDocs";
+import SatisfactionSendNow from "../components/SatisfactionSendNow";
 
 const PAGE_SIZE = 20;
 
@@ -164,26 +165,23 @@ export default function ConfigCustomersPage() {
     ddd: "", number: "", label: "", type: "mobile", contact_name: "", is_primary: false,
   });
 
-  // ----- Pesquisa de satisfação (UI state) -----
   const [surveyForm, setSurveyForm] = useState(null);
   const [surveyQuestions, setSurveyQuestions] = useState([]);
   const [surveyLoading, setSurveyLoading] = useState(false);
   const [surveyMsg, setSurveyMsg] = useState("");
   const [surveyErr, setSurveyErr] = useState("");
 
-  // editor visual para "Adicionar pergunta"
   const [newQuestion, setNewQuestion] = useState({
     prompt: "",
     q_type: "single",
     required: true,
-    optionsFields: [], // <— opções visuais (sem JSON)
+    optionsFields: [],
     min_value: 0,
     max_value: 10,
     order_index: 0,
   });
 
-  // edição inline das perguntas existentes (evita useState dentro do map)
-  const [surveyEdit, setSurveyEdit] = useState({}); // id -> objeto editável
+  const [surveyEdit, setSurveyEdit] = useState({});
 
   const totalPages = useMemo(() => Math.max(1, Math.ceil((total || 0) / PAGE_SIZE)), [total]);
 
@@ -192,10 +190,33 @@ export default function ConfigCustomersPage() {
     headers: { ...(cfg.headers || {}), Authorization: `Bearer ${token}` },
   });
 
+  const companyName = useMemo(() => (
+    console.log(user),
+    user?.company_display_name
+    || user?.company_name
+    || user?.company?.display_name
+    || user?.company?.nome_fantasia
+    || user?.company?.razao_social
+    || "Sua Empresa"
+  ), [user]);
+
+  const currentCustomerId = editing?.id ?? null;
+
+  const customerName = useMemo(() => (
+    editing?.trade_name || editing?.customer || ""
+  ), [editing]);
+
+  const contactPhone = useMemo(() => {
+    const prim = (editing?.phones || []).find(p => p.is_primary) || (editing?.phones || [])[0];
+    if (prim?.phone_nsn) return normalizeBrPhone(prim.phone_nsn);
+
+    const nsn = joinNSN(form?.phonesUI?.[0]?.ddd, form?.phonesUI?.[0]?.number);
+    return normalizeBrPhone(nsn);
+  }, [editing, form]);
+
   useEffect(() => {
     if (!companyId || !token) return;
     fetchList(1, q);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [q, companyId, token]);
 
   async function fetchList(p = 1, qq = "") {
@@ -545,7 +566,7 @@ export default function ConfigCustomersPage() {
   }
 
   // ======= Helpers Pesquisa (novos) =======
-  const needsOptions = (t) => t === "single" || t === "multi" || t === "yes_no";
+  const needsOptions = (t) => t === "single" || t === "multi";
   const ensureYesNo = (arr) => (arr && arr.length ? arr : ["Sim","Não"]);
   function parseOptionsToFields(opt) {
     if (!opt) return [];
@@ -626,21 +647,38 @@ export default function ConfigCustomersPage() {
   async function addSurveyQuestion(e) {
     e?.preventDefault?.();
     try {
-      setSurveyErr(""); setSurveyMsg("");
+      setSurveyErr(""); 
+      setSurveyMsg("");
+
       let optionsArr = null;
       if (needsOptions(newQuestion.q_type)) {
-        const list = (newQuestion.optionsFields || []).map(s => String(s).trim()).filter(Boolean);
-        optionsArr = newQuestion.q_type === "yes_no" ? ensureYesNo(list) : (list.length ? list : null);
+        const list = (newQuestion.optionsFields || [])
+          .map(s => String(s).trim())
+          .filter(Boolean);
+        optionsArr = list.length ? list : null;
       }
+
       const payload = {
         prompt: newQuestion.prompt,
         q_type: newQuestion.q_type,
         required: !!newQuestion.required,
-        options: optionsArr,
+        order_index: Number(newQuestion.order_index || 0),
+        options: newQuestion.q_type === "yes_no" ? null : optionsArr,
         min_value: newQuestion.q_type === "scale" ? Number(newQuestion.min_value) : null,
         max_value: newQuestion.q_type === "scale" ? Number(newQuestion.max_value) : null,
-        order_index: Number(newQuestion.order_index || 0),
       };
+
+      if (
+        newQuestion.q_type === "scale" &&
+        payload.min_value != null &&
+        payload.max_value != null &&
+        payload.min_value > payload.max_value
+      ) {
+        const tmp = payload.min_value;
+        payload.min_value = payload.max_value;
+        payload.max_value = tmp;
+      }
+
       const resp = await api.post(
         `/company/customers/${editing.id}/survey/questions`,
         payload,
@@ -665,21 +703,38 @@ export default function ConfigCustomersPage() {
 
   async function saveQuestionInline(qLocal) {
     try {
-      setSurveyErr(""); setSurveyMsg("");
+      setSurveyErr(""); 
+      setSurveyMsg("");
+
       let optionsArr = null;
       if (needsOptions(qLocal.q_type)) {
-        const list = (qLocal.optionsFields || []).map(s => String(s).trim()).filter(Boolean);
-        optionsArr = qLocal.q_type === "yes_no" ? ensureYesNo(list) : (list.length ? list : null);
+        const list = (qLocal.optionsFields || [])
+          .map(s => String(s).trim())
+          .filter(Boolean);
+        optionsArr = list.length ? list : null;
       }
+
       const payload = {
         prompt: qLocal.prompt,
         q_type: qLocal.q_type,
         required: !!qLocal.required,
         order_index: Number(qLocal.order_index || 0),
+        options: qLocal.q_type === "yes_no" ? null : optionsArr,
         min_value: qLocal.q_type === "scale" ? Number(qLocal.min_value) : null,
         max_value: qLocal.q_type === "scale" ? Number(qLocal.max_value) : null,
-        options: optionsArr
       };
+
+      if (
+        qLocal.q_type === "scale" &&
+        payload.min_value != null &&
+        payload.max_value != null &&
+        payload.min_value > payload.max_value
+      ) {
+        const tmp = payload.min_value;
+        payload.min_value = payload.max_value;
+        payload.max_value = tmp;
+      }
+
       const resp = await api.put(
         `/company/customers/${editing.id}/survey/questions/${qLocal.id}`,
         payload,
@@ -719,7 +774,7 @@ export default function ConfigCustomersPage() {
     ];
     if (editing?.id) {
       base.push({ key: "documentos", label: "Documentos" });
-      base.push({ key: "pesquisa", label: "Pesquisa" });
+      base.push({ key: "pesquisa", label: "Pesquisa de Satisfação" });
     }
     return base;
   }, [editing]);
@@ -914,9 +969,20 @@ export default function ConfigCustomersPage() {
                           <div>
                             <h3 className="text-lg font-semibold">Pesquisa de Satisfação</h3>
                           </div>
+                          <div className="mt-3">
+                            <SatisfactionSendNow
+                              companyName={companyName}
+                              customerName={customerName}
+                              customerId={currentCustomerId}
+                              contactPhone={contactPhone}
+                              onSent={() => {
+
+                                setSurveyMsg("Convite enviado!");
+                              }}
+                            />
+                          </div>
                         </div>
                       </div>
-
                       <div className="border rounded-lg p-4">
                         <h4 className="font-semibold mb-3">Perguntas</h4>
                         {surveyQuestions.length === 0 ? (
@@ -1200,7 +1266,7 @@ export default function ConfigCustomersPage() {
                           )}
 
                           <div className="md:col-span-6 flex justify-end">
-                            <button type="submit" className="px-4 py-2 rounded-lg bg-indigo-600 text-white hover:bg-indigo-700">
+                            <button type="submit" className="px-4 py-2 rounded-lg bg-primary text-white hover:bg-purple-700">
                               Adicionar
                             </button>
                           </div>
